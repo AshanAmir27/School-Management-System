@@ -1,10 +1,18 @@
-import './App.css';
-
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import SuperAdmin from "./components/SuperAdmin";
+import SuperDashboard from "./components/SuperAdminDashboard";
+import ManageAdmins from "./components/ManageAdmins";
 function App() {
   return (
-    <div className="App">
-     <h1 className="text-3xl pt-10">School Management System</h1>
-    </div>
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<SuperAdmin />} />
+          <Route path="/superAdminDashboard" element={<SuperDashboard />} />
+          <Route path="/ManageAdmins" element={<ManageAdmins />} />
+        </Routes>
+      </BrowserRouter>
+    </>
   );
 }
 
