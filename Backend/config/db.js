@@ -6,7 +6,7 @@ const db = mysql.createConnection({
   host: 'localhost',    
   user: 'root',         
   password: '',         
-  database: 'school_management_system', 
+  database: 'school_management_system'
 });
 
 db.connect((err) => {

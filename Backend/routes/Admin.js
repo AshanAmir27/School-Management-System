@@ -1,29 +1,33 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const adminController = require('../controllers/adminController');
+const adminController = require("../controllers/adminController");
 
 // Admin login route
-router.post('/login', adminController.login);
+router.post("/login", adminController.login);
 
 // Faculty management routes
-router.post('/faculty', adminController.createFaculty);
-router.put('/faculty/:id', adminController.editFaculty);
-router.delete('/faculty/:id', adminController.deleteFaculty);
+router.post("/faculty", adminController.createFaculty);
+router.put("/faculty/:id", adminController.editFaculty);
+router.delete("/faculty/:id", adminController.deleteFaculty);
 
 // Student management routes
-router.post('/students', adminController.createStudent);
-router.put('/students/:id', adminController.editStudent);
-router.delete('/students/:id', adminController.deleteStudent);
+router.post("/students", adminController.createStudent);
+router.put("/students/:id", adminController.editStudent);
+router.delete("/students/:id", adminController.deleteStudent);
 
 // Parent management routes
-router.post('/parents', adminController.createParent);
-router.put('/parents/:id', adminController.editParent);
-router.delete('/parents/:id', adminController.deleteParent);
+router.post("/parents", adminController.createParent);
+router.put("/parents/:id", adminController.editParent);
+router.delete("/parents/:id", adminController.deleteParent);
 
-// View all accounts (filtered)
-router.get('/faculty', adminController.getAllFaculty);
-router.get('/students', adminController.getAllStudents);
-router.get('/parents', adminController.getAllParents);
+// Leave management route
+router.post("/approve-leave", adminController.approveLeave);
 
+// Fee management routes
+router.post("/fees", adminController.createFeeStructure);
+router.put("/fees/:id", adminController.updateFeeStructure);
+router.get("/fees/all", adminController.getAllFeeStructures);
+router.get("/fees/:id", adminController.getFeeStructure);
+router.delete("/fees/:id", adminController.deleteFeeStructure);
 
 module.exports = router;
