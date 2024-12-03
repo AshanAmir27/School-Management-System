@@ -581,6 +581,64 @@ const deleteFeeStructure = (req, res) => {
   });
 };
 
+// Create an announcement
+const createAnnouncement = async (req, res) => {
+  const { title, message } = req.body;
+  try {
+      // Execute the query
+      const result = await db.execute(
+          "INSERT INTO announcements (title, message) VALUES (?, ?)",
+          [title, message]
+      );
+
+      // Access the `insertId` from the result
+      res.status(201).json({
+          message: "Announcement created successfully",
+          id: result.insertId,
+      });
+  } catch (error) {
+      console.error("Error creating announcement:", error);
+      res.status(500).json({ message: "Failed to create announcement" });
+  }
+};
+
+const getAnnouncements = async (req, res) => {
+  try {
+    console.log("Executing query: SELECT * FROM announcements");
+
+    // Execute query and check result type
+    const queryResult = await db.execute("SELECT * FROM announcements");
+    console.log("Raw query result:", queryResult);
+
+    if (!Array.isArray(queryResult) || queryResult.length < 2) {
+      throw new Error("Unexpected query result format");
+    }
+
+    const [rows] = queryResult; // Extract rows
+    console.log("Extracted rows:", rows);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error in getAnnouncements:", error.message);
+    res.status(500).json({ message: "Failed to retrieve announcements" });
+  }
+};
+
+// Delete an announcement
+const deleteAnnouncement = async (req, res) => {
+  const { id } = req.params;
+  try {
+      const result = await db.execute("DELETE FROM announcements WHERE id = ?", [id]);
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ message: "Announcement not found" });
+      }
+      res.status(200).json({ message: "Announcement deleted successfully" });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Failed to delete announcement" });
+  }
+};
+
 // Export controller functions
 module.exports = {
   login,
@@ -599,4 +657,7 @@ module.exports = {
   getAllFeeStructures,
   getFeeStructure,
   deleteFeeStructure,
+  createAnnouncement,
+  getAnnouncements,
+  deleteAnnouncement
 };

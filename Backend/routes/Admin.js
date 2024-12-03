@@ -30,4 +30,10 @@ router.get("/fees/all", adminController.getAllFeeStructures);
 router.get("/fees/:id", adminController.getFeeStructure);
 router.delete("/fees/:id", adminController.deleteFeeStructure);
 
+// Announcement routes
+router.post("/announcement", adminController.createAnnouncement);
+router.get("/announcements", adminController.getAnnouncements);
+router.delete("/announcement/:id", adminController.deleteAnnouncement);
+
+
 module.exports = router;
