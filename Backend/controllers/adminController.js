@@ -38,12 +38,14 @@ const login = (req, res) => {
 
 // Function to create a faculty account
 const createFaculty = (req, res) => {
-  const { username, password, full_name, email, phone } = req.body;
+  const { username, password, full_name, email, phone, department } = req.body;
 
-  if (!username || !password || !email || !full_name || !phone) {
+  // Check if all required fields are provided
+  if (!username || !password || !full_name || !email || !phone || !department) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
+  // Check if the username already exists
   db.query(
     "SELECT * FROM faculty WHERE username = ?",
     [username],
@@ -54,6 +56,7 @@ const createFaculty = (req, res) => {
         return res.status(400).json({ error: "Username already exists" });
       }
 
+      // Check if the email already exists
       db.query(
         "SELECT * FROM faculty WHERE email = ?",
         [email],
@@ -64,20 +67,22 @@ const createFaculty = (req, res) => {
             return res.status(400).json({ error: "Email already exists" });
           }
 
+          // Hash the password before saving it
           bcrypt.hash(password, 10, (err, hashedPassword) => {
             if (err) return res.status(500).json({ error: err.message });
 
+            // Prepare the query to insert the new faculty member
             const query = `
-              INSERT INTO faculty (username, password, full_name, email, phone)
-              VALUES (?, ?, ?, ?, ?)
-            `;
+          INSERT INTO faculty (username, password, full_name, email, phone, department, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, NOW())`;
 
             db.query(
               query,
-              [username, hashedPassword, full_name, email, phone],
+              [username, hashedPassword, full_name, email, phone, department],
               (err, result) => {
                 if (err) return res.status(500).json({ error: err.message });
 
+                // Return a success message with the faculty's details
                 res.status(201).json({
                   message: "Faculty account created successfully",
                   faculty: {
@@ -86,6 +91,8 @@ const createFaculty = (req, res) => {
                     full_name,
                     email,
                     phone,
+                    department,
+                    created_at: new Date().toISOString(), // Assuming 'created_at' is the current timestamp
                   },
                 });
               }
@@ -98,7 +105,6 @@ const createFaculty = (req, res) => {
 };
 
 // Function to edit a faculty account
-
 const editFaculty = (req, res) => {
   const { id } = req.params;
   const { username, password, full_name, email, phone, department } = req.body;
@@ -183,13 +189,15 @@ const deleteFaculty = (req, res) => {
   });
 };
 
-
+// Function to respond to  leave request
 const approveLeave = (req, res) => {
   const { leaveId, status } = req.body; // Get leave request ID and approval status from the request body
 
   // Validate inputs
   if (!leaveId || !status) {
-      return res.status(400).json({ message: 'Leave ID and status are required.' });
+    return res
+      .status(400)
+      .json({ message: "Leave ID and status are required." });
   }
 
   // Query to update leave status
@@ -201,20 +209,21 @@ const approveLeave = (req, res) => {
 
   // Execute the query
   db.query(query, [status, leaveId], (err, result) => {
-      if (err) {
-          console.error("Error updating leave request:", err);
-          return res.status(500).json({ message: 'Internal server error.' });
-      }
+    if (err) {
+      console.error("Error updating leave request:", err);
+      return res.status(500).json({ message: "Internal server error." });
+    }
 
-      if (result.affectedRows === 0) {
-          return res.status(404).json({ message: 'Leave request not found.' });
-      }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Leave request not found." });
+    }
 
-      // Respond with success
-      return res.status(200).json({ message: 'Leave request updated successfully.' });
+    // Respond with success
+    return res
+      .status(200)
+      .json({ message: "Leave request updated successfully." });
   });
 };
-
 
 // Function to create a student account
 const createStudent = (req, res) => {
@@ -474,7 +483,6 @@ const deleteParent = (req, res) => {
   });
 };
 
-
 // function to create a fee structure
 const createFeeStructure = (req, res) => {
   const { class: class_name, amount, academic_year } = req.body;
@@ -581,62 +589,357 @@ const deleteFeeStructure = (req, res) => {
   });
 };
 
-// Create an announcement
-const createAnnouncement = async (req, res) => {
+// Create a new announcement
+const createAnnouncement = (req, res) => {
   const { title, message } = req.body;
-  try {
-      // Execute the query
-      const result = await db.execute(
-          "INSERT INTO announcements (title, message) VALUES (?, ?)",
-          [title, message]
-      );
 
-      // Access the `insertId` from the result
-      res.status(201).json({
-          message: "Announcement created successfully",
-          id: result.insertId,
-      });
-  } catch (error) {
-      console.error("Error creating announcement:", error);
-      res.status(500).json({ message: "Failed to create announcement" });
+  if (!title || !message) {
+    return res.status(400).json({ error: "Title and message are required." });
   }
+
+  const query = "INSERT INTO announcements (title, message) VALUES (?, ?)";
+  db.query(query, [title, message], (err, result) => {
+    if (err) {
+      console.error("Error creating announcement:", err);
+      return res.status(500).json({ error: "Failed to create announcement." });
+    }
+    res.status(201).json({
+      message: "Announcement created successfully!",
+      id: result.insertId,
+    });
+  });
 };
 
-const getAnnouncements = async (req, res) => {
-  try {
-    console.log("Executing query: SELECT * FROM announcements");
-
-    // Execute query and check result type
-    const queryResult = await db.execute("SELECT * FROM announcements");
-    console.log("Raw query result:", queryResult);
-
-    if (!Array.isArray(queryResult) || queryResult.length < 2) {
-      throw new Error("Unexpected query result format");
+// Get all announcements
+const getAnnouncements = (req, res) => {
+  const query = "SELECT * FROM announcements ORDER BY created_at DESC";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching announcements:", err);
+      return res
+        .status(500)
+        .json({ error: "Failed to retrieve announcements." });
     }
+    res.status(200).json(results);
+  });
+};
 
-    const [rows] = queryResult; // Extract rows
-    console.log("Extracted rows:", rows);
+// Get a single announcement by ID
+const getAnnouncementById = (req, res) => {
+  const { id } = req.params;
+  const query = "SELECT * FROM announcements WHERE id = ?";
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching announcement:", err);
+      return res
+        .status(500)
+        .json({ error: "Failed to retrieve announcement." });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Announcement not found." });
+    }
+    res.status(200).json(results[0]);
+  });
+};
 
-    res.status(200).json(rows);
-  } catch (error) {
-    console.error("Error in getAnnouncements:", error.message);
-    res.status(500).json({ message: "Failed to retrieve announcements" });
+// Update an existing announcement
+const updateAnnouncement = (req, res) => {
+  const { id } = req.params;
+  const { title, message } = req.body;
+
+  if (!title || !message) {
+    return res.status(400).json({ error: "Title and message are required." });
   }
+
+  const query = "UPDATE announcements SET title = ?, message = ? WHERE id = ?";
+  db.query(query, [title, message, id], (err, result) => {
+    if (err) {
+      console.error("Error updating announcement:", err);
+      return res.status(500).json({ error: "Failed to update announcement." });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Announcement not found." });
+    }
+    res.status(200).json({ message: "Announcement updated successfully!" });
+  });
 };
 
 // Delete an announcement
-const deleteAnnouncement = async (req, res) => {
+const deleteAnnouncement = (req, res) => {
   const { id } = req.params;
-  try {
-      const result = await db.execute("DELETE FROM announcements WHERE id = ?", [id]);
-      if (result.affectedRows === 0) {
-          return res.status(404).json({ message: "Announcement not found" });
-      }
-      res.status(200).json({ message: "Announcement deleted successfully" });
-  } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to delete announcement" });
+  const query = "DELETE FROM announcements WHERE id = ?";
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error("Error deleting announcement:", err);
+      return res.status(500).json({ error: "Failed to delete announcement." });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Announcement not found." });
+    }
+    res.status(200).json({ message: "Announcement deleted successfully!" });
+  });
+};
+
+// function to add fine to student
+const addFineToStudent = (req, res) => {
+  const { id } = req.params; // student ID from URL parameter
+  const { amount, reason } = req.body; // Fine amount and reason from request body
+
+  if (!amount || !reason) {
+    return res.status(400).json({ error: "Amount and reason are required." });
   }
+
+  const query =
+    "INSERT INTO fines (student_id, amount, reason) VALUES (?, ?, ?)";
+  db.query(query, [id, amount, reason], (err, result) => {
+    if (err) {
+      console.error("Error adding fine:", err);
+      return res.status(500).json({ error: "Failed to add fine." });
+    }
+    res
+      .status(201)
+      .json({ message: "Fine added successfully!", fine_id: result.insertId });
+  });
+};
+
+// function to update fine of student
+const updateFineForStudent = (req, res) => {
+  const { id } = req.params; // student ID
+  const { fine_id, amount, reason, status } = req.body; // fine ID and updated data
+
+  if (!fine_id || !amount || !reason || !status) {
+    return res
+      .status(400)
+      .json({ error: "Fine ID, amount, reason, and status are required." });
+  }
+
+  const query =
+    "UPDATE fines SET amount = ?, reason = ?, status = ? WHERE id = ? AND student_id = ?";
+  db.query(query, [amount, reason, status, fine_id, id], (err, result) => {
+    if (err) {
+      console.error("Error updating fine:", err);
+      return res.status(500).json({ error: "Failed to update fine." });
+    }
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ error: "Fine not found for this student." });
+    }
+    res.status(200).json({ message: "Fine updated successfully!" });
+  });
+};
+
+// function to delete fine to student
+const deleteFineForStudent = (req, res) => {
+  const { id } = req.params; // student ID
+  const { fine_id } = req.body; // fine ID to delete
+
+  if (!fine_id) {
+    return res.status(400).json({ error: "Fine ID is required." });
+  }
+
+  const query = "DELETE FROM fines WHERE id = ? AND student_id = ?";
+  db.query(query, [fine_id, id], (err, result) => {
+    if (err) {
+      console.error("Error deleting fine:", err);
+      return res.status(500).json({ error: "Failed to delete fine." });
+    }
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ error: "Fine not found for this student." });
+    }
+    res.status(200).json({ message: "Fine deleted successfully!" });
+  });
+};
+
+// function to view student fine
+const getStudentFines = (req, res) => {
+  const { id } = req.params; // student ID
+
+  const query =
+    "SELECT * FROM fines WHERE student_id = ? ORDER BY fine_date DESC";
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching fines:", err);
+      return res.status(500).json({ error: "Failed to retrieve fines." });
+    }
+    res.status(200).json(results);
+  });
+};
+
+//function to generate fine slip of student
+const generateFineSlip = (req, res) => {
+  const { id } = req.params; // student ID
+
+  const query =
+    'SELECT * FROM fines WHERE student_id = ? AND status = "unpaid"';
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error generating fine slip:", err);
+      return res.status(500).json({ error: "Failed to generate fine slip." });
+    }
+    if (results.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No unpaid fines found for this student." });
+    }
+
+    // Assuming you want to generate a PDF or just send the fine details as a JSON response
+    const fineSlip = {
+      student_id: id,
+      fines: results,
+      total_fine: results.reduce((total, fine) => total + fine.amount, 0),
+      generated_at: new Date(),
+    };
+
+    res.status(200).json(fineSlip);
+  });
+};
+
+// Function to add or update the fee payment status for a student
+const addFeePayment = (req, res) => {
+  const { student_id, amount_paid, total_amount, payment_status, due_date } =
+    req.body;
+
+  // Validate input
+  if (
+    !student_id ||
+    !amount_paid ||
+    !total_amount ||
+    !payment_status ||
+    !due_date
+  ) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  // Ensure the payment status is one of the allowed values
+  if (!["paid", "pending", "partially paid"].includes(payment_status)) {
+    return res.status(400).json({ error: "Invalid payment status." });
+  }
+
+  // Check if the student exists
+  db.query(
+    "SELECT * FROM students WHERE id = ?",
+    [student_id],
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Database error occurred." });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Student not found." });
+      }
+
+      // Check if there's already a record for this student
+      db.query(
+        "SELECT * FROM fee_payment_status WHERE student_id = ?",
+        [student_id],
+        (err, existingRecords) => {
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Database error occurred." });
+          }
+
+          if (existingRecords.length > 0) {
+            // If record exists, update it
+            const updateQuery = `
+            UPDATE fee_payment_status
+            SET amount_paid = ?, total_amount = ?, payment_status = ?, due_date = ?
+            WHERE student_id = ?
+          `;
+            db.query(
+              updateQuery,
+              [amount_paid, total_amount, payment_status, due_date, student_id],
+              (err, result) => {
+                if (err) {
+                  console.error(err);
+                  return res
+                    .status(500)
+                    .json({ error: "Failed to update fee payment status." });
+                }
+
+                return res.status(200).json({
+                  message: "Fee payment status updated successfully.",
+                });
+              }
+            );
+          } else {
+            // If no record exists, insert a new one
+            const insertQuery = `
+            INSERT INTO fee_payment_status (student_id, amount_paid, total_amount, payment_status, due_date)
+            VALUES (?, ?, ?, ?, ?)
+          `;
+            db.query(
+              insertQuery,
+              [student_id, amount_paid, total_amount, payment_status, due_date],
+              (err, result) => {
+                if (err) {
+                  console.error(err);
+                  return res
+                    .status(500)
+                    .json({ error: "Failed to add fee payment status." });
+                }
+
+                return res.status(201).json({
+                  message: "Fee payment status added successfully.",
+                });
+              }
+            );
+          }
+        }
+      );
+    }
+  );
+};
+
+// function to assign classes to faculty
+const assignClassToFaculty = (req, res) => {
+  const { teacher_id, class_name, subject, time, room_no, year } = req.body;
+
+  // Validate the input fields
+  if (!teacher_id || !class_name || !subject || !time || !room_no || !year) {
+    return res.status(400).json({
+      error:
+        "Teacher ID, class name, subject, time, room number, and year are required.",
+    });
+  }
+
+  // Check if the teacher exists in the database
+  db.query(
+    "SELECT * FROM faculty WHERE id = ?",
+    [teacher_id],
+    (err, results) => {
+      if (err) {
+        console.error("Error checking teacher existence:", err);
+        return res.status(500).json({ error: "Database error occurred." });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Teacher not found." });
+      }
+
+      // Insert the class assignment into the database
+      const query = `
+      INSERT INTO class_assignments (teacher_id, class_name, subject, time, room_no, year)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+      db.query(
+        query,
+        [teacher_id, class_name, subject, time, room_no, year],
+        (err, result) => {
+          if (err) {
+            console.error("Error assigning class:", err);
+            return res.status(500).json({ error: "Failed to assign class." });
+          }
+
+          res.status(201).json({ message: "Class assigned successfully!" });
+        }
+      );
+    }
+  );
 };
 
 // Export controller functions
@@ -659,5 +962,16 @@ module.exports = {
   deleteFeeStructure,
   createAnnouncement,
   getAnnouncements,
-  deleteAnnouncement
+  getAnnouncementById,
+  updateAnnouncement,
+  deleteAnnouncement,
+
+  addFineToStudent,
+  updateFineForStudent,
+  deleteFineForStudent,
+  generateFineSlip,
+
+  addFeePayment,
+  getStudentFines,
+  assignClassToFaculty,
 };

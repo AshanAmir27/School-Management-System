@@ -10,6 +10,9 @@ router.post("/faculty", adminController.createFaculty);
 router.put("/faculty/:id", adminController.editFaculty);
 router.delete("/faculty/:id", adminController.deleteFaculty);
 
+// Admin assign class to faculty
+router.post("/assign-class", adminController.assignClassToFaculty);
+
 // Student management routes
 router.post("/students", adminController.createStudent);
 router.put("/students/:id", adminController.editStudent);
@@ -23,17 +26,44 @@ router.delete("/parents/:id", adminController.deleteParent);
 // Leave management route
 router.post("/approve-leave", adminController.approveLeave);
 
-// Fee management routes
+// Fee structure routes
 router.post("/fees", adminController.createFeeStructure);
 router.put("/fees/:id", adminController.updateFeeStructure);
 router.get("/fees/all", adminController.getAllFeeStructures);
 router.get("/fees/:id", adminController.getFeeStructure);
 router.delete("/fees/:id", adminController.deleteFeeStructure);
 
-// Announcement routes
-router.post("/announcement", adminController.createAnnouncement);
-router.get("/announcements", adminController.getAnnouncements);
-router.delete("/announcement/:id", adminController.deleteAnnouncement);
+// Routes for announcements
+router.post("/createAnnouncement", adminController.createAnnouncement);
+router.get("/getAnnouncements", adminController.getAnnouncements);
+router.get("/getAnnouncement/:id", adminController.getAnnouncementById);
+router.put("/updateAnnouncement/:id", adminController.updateAnnouncement);
+router.delete("/deleteAnnouncement/:id", adminController.deleteAnnouncement);
 
+// Routes for student fines management
+
+// Add a fine
+router.post("/student/:id/fine", adminController.addFineToStudent);
+
+// Update a fine
+router.put("/api/admin/student/:id/fine", adminController.updateFineForStudent);
+
+// Delete a fine
+router.delete(
+  "/api/admin/student/:id/fine",
+  adminController.deleteFineForStudent
+);
+
+// Get all fines
+// router.get("/api/admin/student/:id/fines", adminController.getStudentFines);
+
+// Generate fine slip
+router.get(
+  "/api/admin/student/:id/fine-slip",
+  adminController.generateFineSlip
+);
+
+// Route for admin to add or update fee payment status for a student
+router.post("/student/fee-payment", adminController.addFeePayment);
 
 module.exports = router;
