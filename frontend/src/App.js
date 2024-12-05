@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import SuperAdmin from "./components/SuperAdmin";
-import SuperDashboard from "./components/SuperAdminDashboard";
-import ManageAdmins from "./components/ManageAdmins";
+
+import Home from "./components/Home";
+import SuperAdminLogin from "./components/superAdminLogin";
+
 function App() {
   return (
     <>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<SuperAdmin />} />
-          <Route path="/superAdminDashboard" element={<SuperDashboard />} />
-          <Route path="/ManageAdmins" element={<ManageAdmins />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/superAdminLogin" element={<SuperAdminLogin />} />
         </Routes>
       </BrowserRouter>
     </>
