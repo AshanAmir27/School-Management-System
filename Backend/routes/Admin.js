@@ -40,8 +40,6 @@ router.get("/getAnnouncement/:id", adminController.getAnnouncementById);
 router.put("/updateAnnouncement/:id", adminController.updateAnnouncement);
 router.delete("/deleteAnnouncement/:id", adminController.deleteAnnouncement);
 
-// Routes for student fines management
-
 // Add a fine
 router.post("/student/:id/fine", adminController.addFineToStudent);
 
@@ -53,9 +51,6 @@ router.delete(
   "/api/admin/student/:id/fine",
   adminController.deleteFineForStudent
 );
-
-// Get all fines
-// router.get("/api/admin/student/:id/fines", adminController.getStudentFines);
 
 // Generate fine slip
 router.get(

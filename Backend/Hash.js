@@ -1,12 +1,15 @@
-const bcrypt = require('bcrypt');
-const saltRounds = 10;  // You can adjust this to make the hashing slower or faster
+const bcrypt = require("bcrypt");
 
-const password = 'password123';  // The password you want to hash
+const hashedPassword =
+  "$2b$10$EIXGJ0B7sYk/fJrOVvXT/.p1U3kZl8phmj6T5VexxsVpGhlG5wJ62"; // Example hashed password
+const enteredPassword = "superAdmin"; // The password the user entered
 
-bcrypt.hash(password, saltRounds, (err, hash) => {
+bcrypt.compare(enteredPassword, hashedPassword, (err, result) => {
   if (err) {
-    console.error('Error hashing password:', err);
+    console.error("Error comparing password:", err);
+  } else if (result) {
+    console.log("Password is correct!");
   } else {
-    console.log('Hashed Password:', hash);
+    console.log("Incorrect password.");
   }
 });

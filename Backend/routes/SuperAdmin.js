@@ -11,16 +11,20 @@ router.post("/login", superAdminController.loggedIn);
 //Route to add school
 router.post("/addSchool", superAdminController.addSchool);
 
+router.get("/getSchools", superAdminController.getSchool);
+
+router.put("/:id/updateSchools", superAdminController.updateSchool);
+
+router.delete("/:id/deleteSchools", superAdminController.deleteSchool);
+
 // Route to create new admin
 router.post("/createAdmin", superAdminController.createAdmin);
-
-// New routes for fetching, updating, and deleting admins
 
 // Fetch all admins
 router.get("/getAdmins", superAdminController.getAllAdmins);
 
 // Update an admin
-router.put("/updateAdmin", superAdminController.updateAdmin);
+router.put("/:id/updateAdmin", superAdminController.updateAdmin);
 
 // Delete an admin
 router.delete("/deleteAdmin/:id", superAdminController.deleteAdmin);

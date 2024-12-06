@@ -21,16 +21,13 @@ const login = (req, res) => {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      bcrypt.compare(password, results[0].password, (err, isMatch) => {
-        if (err) return res.status(500).json({ error: err.message });
+      // Direct password comparison (REMOVE bcrypt)
+      if (results[0].password !== password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
 
-        if (!isMatch) {
-          return res.status(401).json({ error: "Invalid credentials" });
-        }
-
-        res.status(200).json({
-          message: "Login successful",
-        });
+      res.status(200).json({
+        message: "Login successful",
       });
     }
   );

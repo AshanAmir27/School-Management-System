@@ -7,6 +7,8 @@ function Home() {
       <h1>Home</h1>
 
       <NavLink to="/superAdminLogin">Super Admin Login</NavLink>
+      <br />
+      <NavLink to="/adminLogin">Admin Login</NavLink>
     </div>
   );
 }

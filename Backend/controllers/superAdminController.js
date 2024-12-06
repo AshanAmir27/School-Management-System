@@ -126,80 +126,28 @@ const createAdmin = (req, res) => {
   const { username, password, full_name, email, school_id } = req.body;
 
   // Check if username and password are provided
-  if (!username || !password) {
-    return res
-      .status(400)
-      .json({ error: "Username and password are required" });
+  if (!username || !password || !email) {
+    return res.status(400).json({ error: "Fields are required" });
   }
 
-  // Check if the email is provided
-  if (!email) {
-    return res.status(400).json({ error: "Email is required" });
-  }
+  const query = `
+  INSERT INTO admin (username, password, full_name, email, school_id)
+  VALUES (?, ?, ?, ?, ?)
+  `;
 
-  // Check if the username already exists
-  db.query(
-    "SELECT * FROM admin WHERE username = ?",
-    [username],
-    (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+  const user = [username, password, full_name, email, school_id];
 
-      if (results.length > 0) {
-        return res.status(400).json({ error: "Username already exists" });
-      }
-
-      // Check if the email already exists
-      db.query(
-        "SELECT * FROM admin WHERE email = ?",
-        [email],
-        (err, emailResults) => {
-          if (err) {
-            return res.status(500).json({ error: err.message });
-          }
-
-          if (emailResults.length > 0) {
-            return res.status(400).json({ error: "Email already exists" });
-          }
-
-          // Hash the password before saving it to the database
-          bcrypt.hash(password, 10, (err, hashedPassword) => {
-            if (err) {
-              return res.status(500).json({ error: err.message });
-            }
-
-            // Insert the new admin into the database, including full_name and email
-            const query = `
-          INSERT INTO admin (username, password, full_name, email,school_id)
-          VALUES (?, ?, ?, ?,?)
-        `;
-
-            db.query(
-              query,
-              [username, hashedPassword, full_name, email, school_id],
-              (err, result) => {
-                if (err) {
-                  return res.status(500).json({ error: err.message });
-                }
-
-                res.status(201).json({
-                  message: "Admin created successfully",
-                  admin: {
-                    id: result.insertId,
-                    username,
-                    full_name,
-                    email,
-                    school_id,
-                  },
-                });
-              }
-            );
-          });
-        }
-      );
+  db.query(query, user, (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
     }
-  );
+
+    res.status(201).json({
+      message: "Admin created successfully",
+      result,
+    });
+  });
+  // );
 };
 
 // Controller function to fetch all admins
@@ -215,47 +163,33 @@ const getAllAdmins = (req, res) => {
 
 // Controller function to update an admin
 const updateAdmin = (req, res) => {
-  const { id, username, password, full_name, email } = req.body;
+  const { id } = req.params;
+  const { username, password, full_name, email, school_id } = req.body;
 
-  // Check if all required fields are provided
-  if (!id || !username || !full_name || !email) {
+  // Validate required fields
+  if (!username || !password || !full_name || !email || !school_id) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  // Optionally, hash the new password if provided
-  let updateQuery = "UPDATE admin SET username = ?, full_name = ?, email = ?";
-  let values = [username, full_name, email];
+  const query = `
+    UPDATE admin 
+    SET username = ?, password = ?, full_name = ?, email = ?, school_id = ?
+    WHERE id = ?
+  `;
 
-  if (password) {
-    bcrypt.hash(password, 10, (err, hashedPassword) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+  const values = [username, password, full_name, email, school_id, id];
 
-      updateQuery += ", password = ?";
-      values.push(hashedPassword);
+  db.query(query, values, (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
 
-      db.query(
-        updateQuery + " WHERE id = ?",
-        [...values, id],
-        (err, result) => {
-          if (err) {
-            return res.status(500).json({ error: err.message });
-          }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
 
-          res.status(200).json({ message: "Admin updated successfully" });
-        }
-      );
-    });
-  } else {
-    db.query(updateQuery + " WHERE id = ?", [...values, id], (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      res.status(200).json({ message: "Admin updated successfully" });
-    });
-  }
+    res.status(200).json({ message: "Admin updated successfully" });
+  });
 };
 
 // Controller function to delete an admin
@@ -275,6 +209,73 @@ const deleteAdmin = (req, res) => {
   });
 };
 
+const getSchool = (req, res) => {
+  db.query("Select * from schools", (error, result) => {
+    if (error) {
+      console.log("Error fetching school", error);
+    }
+    res.status(200).json({ schools: result });
+  });
+};
+
+const updateSchool = (req, res) => {
+  const { id } = req.params;
+  const { name, address, contact_number, email, established_year } = req.body;
+
+  // Validate required fields
+  if (!name || !address || !contact_number || !email || !established_year) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  // Define the values array to use in the query
+  const values = [name, address, contact_number, email, established_year, id];
+
+  const query = `
+ UPDATE schools
+SET name = ?, address = ?, contact_number = ?, email = ?, established_year = ?
+WHERE id = ?
+`;
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    res.status(200).json({ message: "Admin updated successfully" });
+  });
+};
+// Inside your superAdminController.js
+const deleteSchool = (req, res) => {
+  const { id } = req.params;
+
+  // Ensure the school exists in the database
+  const queryCheck = "SELECT * FROM schools WHERE id = ?";
+  db.query(queryCheck, [id], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    // Proceed with deletion
+    const queryDelete = "DELETE FROM schools WHERE id = ?";
+    db.query(queryDelete, [id], (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      // Successfully deleted
+      res.status(200).json({ message: "School deleted successfully" });
+    });
+  });
+};
+
 module.exports = {
   registerSuperAdmin,
   loggedIn,
@@ -283,4 +284,7 @@ module.exports = {
   getAllAdmins,
   updateAdmin,
   deleteAdmin,
+  getSchool,
+  updateSchool,
+  deleteSchool,
 };
