@@ -10,6 +10,10 @@ import ApproveLeave from "./components/approveLeave";
 import Announcement from "./components/announcement";
 import ViewAssignedClasses from "./components/viewAssignedClasses";
 import ViewAnnouncement from "./components/viewAnnouncements";
+import FacultyLogin from "./components/facultyLogin";
+import FacultyDashboard from "./components/facultyDashboard";
+import ViewAttendance from "./components/viewAttendance";
+
 function App() {
   return (
     <>
@@ -28,6 +32,9 @@ function App() {
           <Route path="/announcement" element={<Announcement />} />
           <Route path="/viewAnnouncement" element={<ViewAnnouncement />} />
           <Route path="/assigned-classes" element={<ViewAssignedClasses />} />
+          <Route path="/facultyLogin" element={<FacultyLogin />} />
+          <Route path="/facultyDashboard" element={<FacultyDashboard />} />
+          <Route path="/viewAttendance" element={<ViewAttendance />} />
         </Routes>
       </BrowserRouter>
     </>

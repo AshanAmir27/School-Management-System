@@ -11,15 +11,15 @@ router.post("/reset-password", facultyController.resetPassword);
 //Route to get leave
 router.post("/leave-request", facultyController.getLeave);
 
+router.get("/getStudentList", facultyController.getStudentList);
+
+router.get("/getAttendance", facultyController.getAttendance);
+
 // Route to mark attendance for a student
-router.post(
-  "/:faculty_id/mark-attendance",
-  (req, _, next) => {
-    console.log("Faculty ID:", req.params.faculty_id); // Debugging log
-    console.log("Marking attendance for faculty_id:", req.params.faculty_id);
-    next(); // Proceed to the actual handler
-  },
-  facultyController.markAttendance
+router.put("/:faculty_id/mark-attendance", facultyController.markAttendance);
+router.put(
+  "/:faculty_id/update-attendance",
+  facultyController.updateAttendance
 );
 
 // Route to add grades for a specific student

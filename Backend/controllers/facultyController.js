@@ -92,6 +92,16 @@ const resetPassword = (req, res) => {
   );
 };
 
+const getStudentList = (req, res) => {
+  const query = "Select * from students";
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(400).json({ "Failed to fetch student List: ": error });
+    }
+    return res.status(200).json({ StudentList: result });
+  });
+};
 // function to view assigned classes
 const viewAssignedClasses = (req, res) => {
   const { teacher_id } = req.query; // Assuming teacher ID is passed as a query parameter
@@ -124,7 +134,6 @@ const viewAssignedClasses = (req, res) => {
   });
 };
 
-// Function to mark attendance for a student
 const markAttendance = (req, res) => {
   const { student_id, status } = req.body; // Extract student_id and status from the request body
   const { faculty_id } = req.params; // Extract faculty_id from route params
@@ -137,65 +146,110 @@ const markAttendance = (req, res) => {
   }
 
   // Ensure status is either 'present' or 'absent'
-  if (!["present", "absent"].includes(status)) {
+  if (!["Present", "Absent"].includes(status)) {
     return res
       .status(400)
-      .json({ error: "Status must be 'present' or 'absent'." });
+      .json({ error: "Status must be 'Present' or 'Absent'." });
   }
 
-  // Check if the faculty exists
-  db.query(
-    "SELECT * FROM faculty WHERE id = ?",
-    [faculty_id],
-    (err, facultyResults) => {
-      if (err) {
-        console.error("Error checking faculty:", err);
-        return res.status(500).json({ error: "Error checking faculty." });
-      }
-      if (facultyResults.length === 0) {
-        return res.status(404).json({ error: "Faculty not found." });
-      }
+  // Check if the student already has attendance (based only on student_id)
+  const checkQuery = "SELECT * FROM attendance WHERE student_id = ?";
 
-      // Check if the student exists
-      db.query(
-        "SELECT * FROM students WHERE id = ?",
-        [student_id],
-        (err, studentResults) => {
-          if (err) {
-            console.error("Error checking student:", err);
-            return res.status(500).json({ error: "Error checking student." });
-          }
-          if (studentResults.length === 0) {
-            return res.status(404).json({ error: "Student not found." });
-          }
-
-          // Insert the attendance record into the database
-          const date = new Date().toISOString().slice(0, 10); // Current date (YYYY-MM-DD)
-
-          const query =
-            "INSERT INTO attendance (student_id, faculty_id, status, date) VALUES (?, ?, ?, ?)";
-
-          db.query(
-            query,
-            [student_id, faculty_id, status, date],
-            (err, result) => {
-              if (err) {
-                console.error("Error inserting attendance:", err);
-                return res
-                  .status(500)
-                  .json({ error: "Failed to mark attendance." });
-              }
-
-              // Respond with success
-              res
-                .status(200)
-                .json({ message: "Attendance marked successfully." });
-            }
-          );
-        }
-      );
+  db.query(checkQuery, [student_id], (err, result) => {
+    if (err) {
+      console.error("Error checking attendance:", err);
+      return res.status(500).json({ error: "Error checking attendance." });
     }
-  );
+
+    // If a record exists, prevent adding new attendance
+    if (result.length > 0) {
+      return res.status(400).json({
+        error: "Attendance already marked for this student.",
+      });
+    }
+
+    // Insert the attendance record into the database if not already marked
+    const date = new Date().toISOString().slice(0, 10); // Get the current date (YYYY-MM-DD)
+
+    const insertQuery =
+      "INSERT INTO attendance (student_id, faculty_id, status, date) VALUES (?, ?, ?, ?)";
+
+    db.query(
+      insertQuery,
+      [student_id, faculty_id, status, date],
+      (err, result) => {
+        if (err) {
+          console.error("Error inserting attendance:", err);
+          return res.status(500).json({ error: "Failed to mark attendance." });
+        }
+
+        // Respond with success
+        res.status(200).json({ message: "Attendance marked successfully." });
+      }
+    );
+  });
+};
+
+const updateAttendance = (req, res) => {
+  const { student_id, status } = req.body; // Extract student_id and status from the request body
+  const { faculty_id } = req.params; // Extract faculty_id from route params
+
+  // Validate input fields
+  if (!student_id || !status || !faculty_id) {
+    return res
+      .status(400)
+      .json({ error: "Student ID, status, and faculty ID are required." });
+  }
+
+  // Ensure status is either 'present' or 'absent'
+  if (!["Present", "Absent"].includes(status)) {
+    return res
+      .status(400)
+      .json({ error: "Status must be 'Present' or 'Absent'." });
+  }
+
+  // Check if the attendance record exists for the specific student
+  const checkQuery =
+    "SELECT * FROM attendance WHERE student_id = ? AND faculty_id = ?";
+
+  db.query(checkQuery, [student_id, faculty_id], (err, result) => {
+    if (err) {
+      console.error("Error checking attendance:", err);
+      return res.status(500).json({ error: "Error checking attendance." });
+    }
+
+    // If no record exists for the student, return an error
+    if (result.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Attendance not found for this student." });
+    }
+
+    // Update the attendance record
+    const updateQuery =
+      "UPDATE attendance SET status = ? WHERE student_id = ? AND faculty_id = ?";
+
+    db.query(updateQuery, [status, student_id, faculty_id], (err, result) => {
+      if (err) {
+        console.error("Error updating attendance:", err);
+        return res.status(500).json({ error: "Failed to update attendance." });
+      }
+
+      // Respond with success
+      res.status(200).json({ message: "Attendance updated successfully." });
+    });
+  });
+};
+
+const getAttendance = (req, res) => {
+  const query = "Select * from attendance";
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(400).json({ errro: error });
+    }
+    return res.status(200).json({ attendance: result });
+  });
 };
 
 // function to get leave
@@ -351,8 +405,11 @@ const viewAnnouncements = (req, res) => {
 module.exports = {
   login,
   resetPassword,
+  getStudentList,
   getLeave,
   markAttendance,
+  updateAttendance,
+  getAttendance,
   addGrade,
   updateLeaveRequestStatus,
   viewAssignedClasses,
