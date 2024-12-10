@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
+const { query } = require("express");
 
 // Controller function to authenticate admin login
 const login = (req, res) => {
@@ -167,6 +168,20 @@ const editFaculty = (req, res) => {
   }
 };
 
+const getFaculty = (req, res) => {
+  const query = "SELECT * FROM faculty"; // Fetch all faculty members
+
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message }); // Proper error handling
+    }
+    res.status(200).json({
+      message: "Faculty fetched successfully",
+      faculties: results, // Return the fetched data
+    });
+  });
+};
+
 // Function to delete a faculty account
 const deleteFaculty = (req, res) => {
   const { id } = req.params;
@@ -186,39 +201,30 @@ const deleteFaculty = (req, res) => {
   });
 };
 
-// Function to respond to  leave request
-const approveLeave = (req, res) => {
-  const { leaveId, status } = req.body; // Get leave request ID and approval status from the request body
+const getApproveLeave = (req, res) => {
+  const query = "SELECT * FROM leave_requests";
 
-  // Validate inputs
-  if (!leaveId || !status) {
-    return res
-      .status(400)
-      .json({ message: "Leave ID and status are required." });
-  }
-
-  // Query to update leave status
-  const query = `
-      UPDATE leave_requests 
-      SET status = ? 
-      WHERE id = ?
-  `;
-
-  // Execute the query
-  db.query(query, [status, leaveId], (err, result) => {
-    if (err) {
-      console.error("Error updating leave request:", err);
-      return res.status(500).json({ message: "Internal server error." });
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(400).json({ Error: error });
+    } else {
+      return res.status(200).json({ request: result });
     }
+  });
+};
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Leave request not found." });
+// Function to respond to  update leave status
+const updateLeaveStatus = (req, res) => {
+  const { id, status } = req.body;
+
+  const query = "UPDATE leave_requests SET status = ? WHERE id = ?";
+  db.query(query, [status, id], (error, result) => {
+    if (error) {
+      return res.status(400).json({ error: "Failed to update leave request" });
     }
-
-    // Respond with success
     return res
       .status(200)
-      .json({ message: "Leave request updated successfully." });
+      .json({ result: "Leave request updated successfully" });
   });
 };
 
@@ -230,7 +236,7 @@ const createStudent = (req, res) => {
     full_name,
     email,
     phone,
-    class: studentClass,
+    classes: studentClass,
   } = req.body;
 
   if (!username || !password || !full_name || !email || !studentClass) {
@@ -241,25 +247,25 @@ const createStudent = (req, res) => {
     "SELECT * FROM students WHERE username = ?",
     [username],
     (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) return res.status(500).json({ error: "Database error" });
 
       if (results.length > 0) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
       bcrypt.hash(password, 10, (err, hashedPassword) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) return res.status(500).json({ error: "Encryption error" });
 
         const query = `
-        INSERT INTO students (username, password, full_name, email, phone, class)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
+          INSERT INTO students (username, password, full_name, email, phone, class)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `;
 
         db.query(
           query,
           [username, hashedPassword, full_name, email, phone, studentClass],
           (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) return res.status(500).json({ error: "Insertion error" });
 
             res.status(201).json({
               message: "Student account created successfully",
@@ -268,6 +274,7 @@ const createStudent = (req, res) => {
                 username,
                 full_name,
                 email,
+                phone,
                 class: studentClass,
               },
             });
@@ -276,6 +283,20 @@ const createStudent = (req, res) => {
       });
     }
   );
+};
+
+const getStudent = (req, res) => {
+  // const query = `Select * from students`;
+
+  const query =
+    "SELECT id, username, password, full_name, email, phone, class AS studentClass FROM students";
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(500).json({ error: error });
+    }
+    return res.status(200).json({ student: result });
+  });
 };
 
 // Function to edit a student account
@@ -348,52 +369,45 @@ const deleteStudent = (req, res) => {
 
 // Function to create a parent account
 const createParent = (req, res) => {
+  console.log("Request Body:", req.body); // Add this to inspect the incoming data
+
   const { username, password, full_name, email, phone, student_id } = req.body;
 
-  if (!username || !password || !full_name || !email || !student_id) {
+  if (!username || !password || !full_name || !email || !phone || !student_id) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  db.query(
-    "SELECT * FROM parents WHERE username = ?",
-    [username],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-
-      if (results.length > 0) {
-        return res.status(400).json({ error: "Username already exists" });
-      }
-
-      bcrypt.hash(password, 10, (err, hashedPassword) => {
-        if (err) return res.status(500).json({ error: err.message });
-
-        const query = `
+  const query = `
           INSERT INTO parents (username, password, full_name, email, phone, student_id)
           VALUES (?, ?, ?, ?, ?, ?)
         `;
 
-        db.query(
-          query,
-          [username, hashedPassword, full_name, email, phone, student_id],
-          (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
+  db.query(
+    query,
+    [username, password, full_name, email, phone, student_id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
 
-            res.status(201).json({
-              message: "Parent account created successfully",
-              parent: {
-                id: result.insertId,
-                username,
-                full_name,
-                email,
-                phone,
-                student_id,
-              },
-            });
-          }
-        );
+      res.status(201).json({
+        message: "Parent account created successfully",
+        result,
       });
     }
   );
+};
+
+const getParents = (_, res) => {
+  const query = `Select * from parents`;
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Parent data fetched successfully", parents: result });
+  });
 };
 
 // Function to edit a parent account
@@ -765,6 +779,18 @@ const getStudentFines = (req, res) => {
   });
 };
 
+const getFineDetail = (req, res) => {
+  const query = "Select * from fines";
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(400).json({ error: error });
+    } else {
+      return res.status(200).json({ fine: result });
+    }
+  });
+};
+
 //function to generate fine slip of student
 const generateFineSlip = (req, res) => {
   const { id } = req.params; // student ID
@@ -791,6 +817,17 @@ const generateFineSlip = (req, res) => {
     };
 
     res.status(200).json(fineSlip);
+  });
+};
+
+const getFeeDetail = (req, res) => {
+  const query = "Select * from fee_payment_status";
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(400).json({ error: error });
+    }
+    return res.status(200).json({ feePayment: result });
   });
 };
 
@@ -939,24 +976,45 @@ const assignClassToFaculty = (req, res) => {
   );
 };
 
+const getAssignedClasses = (_, res) => {
+  db.query("Select * from class_assignments", (error, result) => {
+    if (error) {
+      return res.status(500).json({ error: error });
+    }
+    return res.status(200).json({ AssignedClass: result });
+  });
+};
+
 // Export controller functions
 module.exports = {
   login,
+
   createFaculty,
+  getFaculty,
   editFaculty,
   deleteFaculty,
+  assignClassToFaculty,
+  getAssignedClasses,
+
   createStudent,
+  getStudent,
   editStudent,
   deleteStudent,
+
   createParent,
+  getParents,
   editParent,
   deleteParent,
-  approveLeave,
+
+  getApproveLeave,
+  updateLeaveStatus,
+
   createFeeStructure,
   updateFeeStructure,
   getAllFeeStructures,
   getFeeStructure,
   deleteFeeStructure,
+
   createAnnouncement,
   getAnnouncements,
   getAnnouncementById,
@@ -964,11 +1022,12 @@ module.exports = {
   deleteAnnouncement,
 
   addFineToStudent,
+  getFineDetail,
   updateFineForStudent,
   deleteFineForStudent,
   generateFineSlip,
 
   addFeePayment,
+  getFeeDetail,
   getStudentFines,
-  assignClassToFaculty,
 };
