@@ -1,5 +1,7 @@
 const express = require("express");
 const superAdminController = require("../controllers/superAdminController");
+const { verifyToken, checkSuperAdminRole } = require("../middleware/auth");
+
 const router = express.Router();
 
 //Route to register super admin
@@ -9,7 +11,12 @@ router.post("/register", superAdminController.registerSuperAdmin);
 router.post("/login", superAdminController.loggedIn);
 
 //Route to add school
-router.post("/addSchool", superAdminController.addSchool);
+router.post(
+  "/addSchool",
+  verifyToken, // First verify the token
+  checkSuperAdminRole, // Then check if the role is SuperAdmin
+  superAdminController.addSchool
+);
 
 router.get("/getSchools", superAdminController.getSchool);
 

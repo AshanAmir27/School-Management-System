@@ -11,29 +11,19 @@ const login = (req, res) => {
       .json({ error: "Username and password are required" });
   }
 
-  db.query(
-    "SELECT * FROM parents WHERE username = ?",
-    [username],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
+  const query = "SELECT * FROM parents WHERE username = ?";
 
-      if (results.length === 0) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
+  db.query(query, [username], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
 
-      bcrypt.compare(password, results[0].password, (err, isMatch) => {
-        if (err) return res.status(500).json({ error: err.message });
-
-        if (!isMatch) {
-          return res.status(401).json({ error: "Invalid credentials" });
-        }
-
-        res.status(200).json({
-          message: "Login successful",
-        });
-      });
+    if (results.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
-  );
+
+    res.status(200).json({
+      message: "Login successful",
+    });
+  });
 };
 
 const resetPassword = (req, res) => {

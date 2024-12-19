@@ -128,13 +128,18 @@ const viewAttendance = (req, res) => {
 const viewGrades = (req, res) => {
   const { student_id } = req.params; // Get the student ID from the route params
 
-  // Query to fetch grades for the student
   const query = `
-    SELECT g.subject, g.grade, g.classes, g.year, f.full_name AS faculty_name 
+    SELECT 
+      g.subject, 
+      g.grade, 
+      g.obtainedMarks, 
+      g.totalMarks, 
+      g.percentage, 
+      f.full_name AS faculty_name 
     FROM grades g
     JOIN faculty f ON g.faculty_id = f.id
     WHERE g.student_id = ?
-    ORDER BY g.year DESC, g.classes DESC
+    ORDER BY g.classId DESC, g.subject DESC
   `;
 
   db.query(query, [student_id], (err, results) => {
@@ -143,13 +148,24 @@ const viewGrades = (req, res) => {
       return res.status(500).json({ error: "Error fetching grade data." });
     }
 
-    // Check if there are any grades for the student
     if (results.length === 0) {
       return res.status(404).json({ message: "No grade records found." });
     }
 
-    // Respond with the grade data
     res.status(200).json({ grades: results });
+  });
+};
+
+const viewAssignments = (req, res) => {
+  const query = "SELECT * FROM class_assignments_tasks";
+
+  db.query(query, (error, result) => {
+    if (error) {
+      console.error("Error fetching tasks:", error);
+      return res.status(400).json({ error: "Error fetching tasks" });
+    }
+
+    return res.status(200).json({ success: true, data: result });
   });
 };
 
@@ -314,7 +330,7 @@ const downloadFineSlip = (req, res) => {
       doc.text(`Fine #${index + 1}:`);
       doc.text(`  Reason: ${fine.reason}`);
       doc.text(`  Amount: $${fine.amount}`);
-      doc.text(`  Date: ${fine.created_at}`);
+      doc.text(`  Date: ${fine.fine_date}`);
       doc.moveDown();
     });
 
@@ -322,9 +338,55 @@ const downloadFineSlip = (req, res) => {
   });
 };
 
+const downloadFeeChallan = (req, res) => {
+  const { student_id } = req.params; // Match the parameter name with the route
+
+  const query = `SELECT * FROM fee_payment_status WHERE student_id = ? AND payment_status != 'paid'`;
+
+  db.query(query, [student_id], (error, result) => {
+    if (error) {
+      return res
+        .status(400)
+        .json({ error: "Error fetching challan details", details: error });
+    }
+
+    if (result.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No unpaid challans found for this student." });
+    }
+
+    // Generate PDF
+    const doc = new PDFDocument();
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=fine-slip-${student_id}.pdf`
+    );
+
+    doc.pipe(res); // Pipe the PDF directly to the response
+    doc.fontSize(16).text("Fee Challan", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(12).text(`Student ID: ${student_id}`);
+    doc.moveDown();
+
+    result.forEach((challan, index) => {
+      doc.text(`Challan #${index + 1}:`);
+      doc.text(`  Amount Paid: ${challan.amount_paid || "N/A"}`);
+      doc.text(`  Total Amount: ${challan.total_amount || 0}`);
+      doc.text(`  Payment Status: ${challan.payment_status || 0}`);
+      doc.text(`  Due Date: ${challan.due_date || "Unknown"}`);
+      doc.moveDown();
+    });
+
+    doc.end(); // Finalize the PDF and send it
+  });
+};
+
 module.exports = {
   login,
   resetPassword,
+  viewAssignments,
   viewAttendance,
   viewGrades,
   getFeeStatus,
@@ -332,4 +394,5 @@ module.exports = {
   getAnnouncements,
   downloadFineSlip,
   getFines,
+  downloadFeeChallan,
 };

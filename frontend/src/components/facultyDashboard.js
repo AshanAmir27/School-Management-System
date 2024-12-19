@@ -1,78 +1,87 @@
 import React, { useState } from "react";
 import { IoSettingsOutline } from "react-icons/io5";
 import { IoMdNotificationsOutline } from "react-icons/io";
+import { BsFillHouseDoorFill } from "react-icons/bs"; // Example for additional icon
 
 // Import the components for different sections of the dashboard
-// import MarkAttendance from "./markAttendance";
+import Assignment from "./Assignment";
 import ViewAttendance from "./viewAttendance";
 import FacultySubmitLeave from "./facultySubmitLeave";
-// import ViewLeaveRequests from "./viewLeaveRequests";
-// import AddGrades from "./addGrades";
-// import ViewGrades from "./viewGrades";
+import StudentLeaveRequest from "./viewStdLeaveReq";
+import ViewAnnouncement from "./viewAnnouncements";
+import AddGrades from "./addGrade";
+import ViewGrades from "./viewGrades";
+import FacultyAssignedClasses from "./facultyAssignedClasses";
 
 function FacultyDashboard() {
   // State to manage which component to display
   const [activeComponent, setActiveComponent] = useState(null);
 
   return (
-    <div>
+    <div className="font-sans antialiased bg-gray-100 min-h-screen">
       {/* Top bar */}
-      <div className="flex justify-between pl-4 pt-2 pb-2 pr-6 bg-gray-800 text-white fixed w-full z-10">
-        <h1 className="text-xl">Faculty Dashboard</h1>
-
-        <div className="flex gap-2">
-          <IoMdNotificationsOutline className="text-2xl" />
-          <IoSettingsOutline className="text-2xl" />
+      <div className="flex justify-between px-6 py-4 bg-blue-900 text-white shadow-lg fixed w-full z-10">
+        <h1 className="text-2xl font-bold">Faculty Dashboard</h1>
+        <div className="flex gap-4 items-center">
+          <IoMdNotificationsOutline className="text-2xl hover:text-yellow-400 cursor-pointer transition duration-300" />
+          <IoSettingsOutline className="text-2xl hover:text-yellow-400 cursor-pointer transition duration-300" />
         </div>
       </div>
 
       {/* Sidebar and main content */}
-      <section className="flex pt-12">
+      <section className="flex pt-16">
         {/* Sidebar */}
-        <section className="bg-gray-800 text-white w-60 h-[calc(100vh)] pl-4 pt-5 fixed">
-          <div className="mb-2">
+        <section className="bg-blue-900 text-white w-64 h-screen p-5 fixed shadow-lg">
+          <div className="flex items-center gap-2 text-2xl text-white mb-8">
+            <BsFillHouseDoorFill />
+            <span className="font-bold text-xl">Dashboard</span>
+          </div>
+
+          <div className="space-y-4">
             <button
-              className="w-full text-left"
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
+              onClick={() => setActiveComponent("FacultyAssignedClasses")}
+            >
+              FacultyAssignedClasses
+            </button>
+            <button
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
+              onClick={() => setActiveComponent("assignment")}
+            >
+              Assignment
+            </button>
+            <button
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
               onClick={() => setActiveComponent("FacultySubmitLeave")}
             >
-              Submit Leave
+              Submit Leave Request
             </button>
-          </div>
-          <div className="mb-2">
             <button
-              className="w-full text-left"
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
               onClick={() => setActiveComponent("viewAttendance")}
             >
               View Attendance
             </button>
-          </div>
-          <div className="mb-2">
             <button
-              className="w-full text-left"
-              onClick={() => setActiveComponent("SubmitLeave")}
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
+              onClick={() => setActiveComponent("StudentLeaveRequest")}
             >
-              Submit Leave Request
+              Student Leave Request
             </button>
-          </div>
-          <div className="mb-2">
             <button
-              className="w-full text-left"
-              onClick={() => setActiveComponent("ViewLeaveRequests")}
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
+              onClick={() => setActiveComponent("ViewAnnouncement")}
             >
-              View Leave Requests
+              View Announcement
             </button>
-          </div>
-          <div className="mb-2">
             <button
-              className="w-full text-left"
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
               onClick={() => setActiveComponent("AddGrades")}
             >
               Add Grades
             </button>
-          </div>
-          <div className="mb-2">
             <button
-              className="w-full text-left"
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
               onClick={() => setActiveComponent("ViewGrades")}
             >
               View Grades
@@ -81,17 +90,20 @@ function FacultyDashboard() {
         </section>
 
         {/* Main Section */}
-        <section className="bg-gray-100 text-black w-full pl-64 pt-5">
+        <section className="bg-gray-50 w-full ml-64 p-6">
+          {activeComponent === "assignment" && <Assignment />}
           {activeComponent === "FacultySubmitLeave" && <FacultySubmitLeave />}
           {activeComponent === "viewAttendance" && <ViewAttendance />}
-          {/*{activeComponent === "SubmitLeave" && <SubmitLeave />}
-          {activeComponent === "ViewLeaveRequests" && <ViewLeaveRequests />}
+          {activeComponent === "StudentLeaveRequest" && <StudentLeaveRequest />}
+          {activeComponent === "FacultyAssignedClasses" && (
+            <FacultyAssignedClasses />
+          )}
+          {activeComponent === "ViewAnnouncement" && <ViewAnnouncement />}
           {activeComponent === "AddGrades" && <AddGrades />}
-          {activeComponent === "ViewGrades" && <ViewGrades />} */}
-
+          {activeComponent === "ViewGrades" && <ViewGrades />}
           {!activeComponent && (
-            <div className="text-gray-400">
-              Select an option from the sidebar
+            <div className="text-center text-gray-500 font-semibold">
+              Please select an option from the sidebar.
             </div>
           )}
         </section>

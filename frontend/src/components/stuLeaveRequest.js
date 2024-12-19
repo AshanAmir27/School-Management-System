@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
-function FacultySubmitLeave() {
-  const [faculty_id, setFacultyId] = useState(""); // Assuming faculty_id is provided or can be fetched dynamically
+function StudentSubmitLeave() {
+  const [student_id, setStudentId] = useState(""); // Assuming faculty_id is provided or can be fetched dynamically
   const [leave_start_date, setLeave_start_date] = useState("");
   const [leave_end_date, setLeave_end_date] = useState("");
   const [leave_reason, setLeave_reason] = useState("");
@@ -23,7 +23,7 @@ function FacultySubmitLeave() {
 
     // Prepare request data
     const leaveData = {
-      faculty_id: faculty_id, // Replace with actual faculty ID if dynamically fetched
+      student_id: student_id, // Replace with actual faculty ID if dynamically fetched
       leave_start_date: leave_start_date,
       leave_end_date: leave_end_date,
       leave_reason: leave_reason,
@@ -31,7 +31,7 @@ function FacultySubmitLeave() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/faculty/leave-request",
+        "http://localhost:5000/api/student/leave-request",
         {
           method: "POST",
           headers: {
@@ -78,16 +78,16 @@ function FacultySubmitLeave() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label
-              htmlFor="faculty_id"
+              htmlFor="student_id"
               className="block text-sm font-medium text-gray-700"
             >
-              Faculty ID
+              Student ID
             </label>
             <input
               type="text"
-              id="faculty_id"
-              value={faculty_id}
-              onChange={(e) => setFacultyId(e.target.value)}
+              id="student_id"
+              value={student_id}
+              onChange={(e) => setStudentId(e.target.value)}
               className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               required
             />
@@ -148,7 +148,7 @@ function FacultySubmitLeave() {
             type="submit"
             className="w-full py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
           >
-            Submit Leave Request
+            Submit
           </button>
         </form>
       </div>
@@ -156,4 +156,4 @@ function FacultySubmitLeave() {
   );
 }
 
-export default FacultySubmitLeave;
+export default StudentSubmitLeave;

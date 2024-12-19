@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-function ViewAttendance() {
+function StuAttendance() {
   const [error, setError] = useState("");
   const [studentList, setStudentList] = useState([]);
   const [attendanceList, setAttendanceList] = useState([]);
@@ -61,6 +61,7 @@ function ViewAttendance() {
           student_id: student.id,
           full_name: student.full_name,
           email: student.email,
+          updated_at: attendance.updated_at,
           attendance_status: attendance ? attendance.status : "not marked",
         };
       });
@@ -69,41 +70,6 @@ function ViewAttendance() {
       setMergedData([]);
     }
   }, [studentList, attendanceList]);
-
-  // Mark student as Present or Absent
-  const markAttendance = async (studentId, status) => {
-    const facultyId = 1; // Replace with the actual faculty ID if needed
-    const endpoint = `http://localhost:5000/api/faculty/${facultyId}/mark-attendance`;
-
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          student_id: studentId,
-          status: status,
-        }),
-      });
-
-      if (!response.ok)
-        throw new Error(`Error marking attendance as ${status}`);
-
-      const data = await response.json();
-      console.log(`${status} Success:`, data);
-
-      // Update UI
-      setMergedData((prevData) =>
-        prevData.map((student) =>
-          student.student_id === studentId
-            ? { ...student, attendance_status: status }
-            : student
-        )
-      );
-    } catch (error) {
-      console.error("Error:", error.message || error);
-      setError(error.message || `An error occurred while marking ${status}.`);
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-50 py-8">
@@ -127,13 +93,10 @@ function ViewAttendance() {
                   Full Name
                 </th>
                 <th className="px-6 py-4 text-sm font-medium text-gray-600 text-left">
-                  Email
+                  Date
                 </th>
                 <th className="px-6 py-4 text-sm font-medium text-gray-600 text-left">
                   Attendance Status
-                </th>
-                <th className="px-6 py-4 text-sm font-medium text-gray-600 text-left">
-                  Actions
                 </th>
               </tr>
             </thead>
@@ -150,30 +113,10 @@ function ViewAttendance() {
                     {student.full_name}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
-                    {student.email}
+                    {student.updated_at}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {student.attendance_status}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    <div className="flex space-x-2">
-                      <button
-                        className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition"
-                        onClick={() =>
-                          markAttendance(student.student_id, "Absent")
-                        }
-                      >
-                        Absent
-                      </button>
-                      <button
-                        className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition"
-                        onClick={() =>
-                          markAttendance(student.student_id, "Present")
-                        }
-                      >
-                        Present
-                      </button>
-                    </div>
                   </td>
                 </tr>
               ))}
@@ -185,4 +128,4 @@ function ViewAttendance() {
   );
 }
 
-export default ViewAttendance;
+export default StuAttendance;

@@ -11,11 +11,19 @@ router.post("/reset", studentController.resetPassword);
 // Route to view attendance for a specific student
 router.get("/:student_id/attendance", studentController.viewAttendance);
 
+//Route to view assignments
+router.get("/assignments", studentController.viewAssignments);
+
 // Route to view grades for a specific student
 router.get("/:student_id/grades", studentController.viewGrades);
 
 // Route to fetch fee payment status
 router.get("/:id/fee-status", studentController.getFeeStatus);
+
+router.get(
+  "/:student_id/download-challan",
+  studentController.downloadFeeChallan
+);
 
 // Route for student to submit a leave request
 router.post("/leave-request", studentController.submitLeaveRequest);

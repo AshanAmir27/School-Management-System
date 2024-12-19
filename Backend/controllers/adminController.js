@@ -14,7 +14,7 @@ const login = (req, res) => {
 
   db.query(
     "SELECT * FROM admin WHERE username = ?",
-    [username],
+    username,
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
 
@@ -168,18 +168,24 @@ const editFaculty = (req, res) => {
   }
 };
 
-const getFaculty = (req, res) => {
-  const query = "SELECT * FROM faculty"; // Fetch all faculty members
-
-  db.query(query, (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message }); // Proper error handling
-    }
-    res.status(200).json({
-      message: "Faculty fetched successfully",
-      faculties: results, // Return the fetched data
+const getFaculty = async (req, res) => {
+  try {
+    // Use query instead of execute
+    db.query("SELECT * FROM faculty", (err, results) => {
+      if (err) {
+        console.error("Error fetching faculty:", err.message);
+        return res
+          .status(500)
+          .json({ success: false, message: "Error fetching faculty" });
+      }
+      res.status(200).json({ success: true, data: results });
     });
-  });
+  } catch (error) {
+    console.error("Unexpected error:", error.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Unexpected error occurred" });
+  }
 };
 
 // Function to delete a faculty account
@@ -191,7 +197,10 @@ const deleteFaculty = (req, res) => {
   }
 
   db.query("DELETE FROM faculty WHERE id = ?", [id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      console.log(err); // Log the error for better debugging
+      return res.status(500).json({ error: err.message });
+    }
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Faculty not found" });

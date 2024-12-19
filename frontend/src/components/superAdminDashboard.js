@@ -1,78 +1,82 @@
 import React, { useState } from "react";
-import { IoSettingsOutline } from "react-icons/io5";
-import { IoMdNotificationsOutline } from "react-icons/io";
-import CreateAdmin from "./createAdmin"; // Import CreateAdmin component
+// import { IoSettingsOutline, IoMdNotificationsOutline } from "react-icons/io5";
+import CreateAdmin from "./createAdmin";
 import CreateSchool from "./createSchool";
 import ViewAdmins from "./viewAdmins";
 import ViewSchool from "./viewSchool";
 
 function SuperAdminDashboard() {
-  // State to manage which component to display
   const [activeComponent, setActiveComponent] = useState(null);
 
+  const menuItems = [
+    { label: "Create Admin", component: "CreateAdmin" },
+    { label: "Create School", component: "CreateSchool" },
+    { label: "View Admins", component: "ViewAdmins" },
+    { label: "View School", component: "ViewSchool" },
+  ];
+
+  const renderComponent = () => {
+    switch (activeComponent) {
+      case "CreateAdmin":
+        return <CreateAdmin />;
+      case "CreateSchool":
+        return <CreateSchool />;
+      case "ViewAdmins":
+        return <ViewAdmins />;
+      case "ViewSchool":
+        return <ViewSchool />;
+      default:
+        return (
+          <div className="text-gray-500 text-center mt-20">
+            <h2 className="text-2xl font-semibold">Welcome, SuperAdmin!</h2>
+            <p className="mt-2">
+              Please select an option from the sidebar to get started.
+            </p>
+          </div>
+        );
+    }
+  };
+
   return (
-    <div>
-      {/* Top bar */}
-      <div className="flex justify-between pl-4 pt-2 pb-2 pr-6 bg-gray-800 text-white fixed w-full z-10">
-        <h1 className="text-xl">SuperAdmin</h1>
+    <div className="min-h-screen bg-gray-100">
+      {/* Top Bar */}
+      <header className="flex justify-between items-center bg-gray-800 text-white px-6 py-4 shadow-md fixed w-full z-10">
+        <h1 className="text-2xl font-bold">SuperAdmin Dashboard</h1>
+        {/* <div className="flex items-center gap-4">
+          <IoMdNotificationsOutline
+            className="text-3xl cursor-pointer hover:text-gray-400"
+            aria-label="Notifications"
+          />
+          <IoSettingsOutline
+            className="text-3xl cursor-pointer hover:text-gray-400"
+            aria-label="Settings"
+          />
+        </div> */}
+      </header>
 
-        <div className="flex gap-2">
-          <IoMdNotificationsOutline className="text-2xl" />
-          <IoSettingsOutline className="text-2xl" />
-        </div>
-      </div>
-
-      {/* Sidebar and main content */}
-      <section className="flex pt-12">
+      {/* Sidebar and Main Content */}
+      <div className="flex pt-16">
         {/* Sidebar */}
-        <section className="bg-gray-800 text-white w-60 h-[calc(100vh)] pl-4 pt-5 fixed">
-          <div className="mb-2">
-            <button
-              className="w-full text-left"
-              onClick={() => setActiveComponent("CreateAdmin")}
-            >
-              Create Admin
-            </button>
-          </div>
-          <div className="mb-2">
-            <button
-              className="w-full text-left"
-              onClick={() => setActiveComponent("CreateSchool")}
-            >
-              Create School
-            </button>
-          </div>
-          <div className="mb-2">
-            <button
-              className="w-full text-left"
-              onClick={() => setActiveComponent("ViewAdmins")}
-            >
-              View Admins
-            </button>
-          </div>
-          <div className="mb-2">
-            <button
-              className="w-full text-left"
-              onClick={() => setActiveComponent("ViewSchool")}
-            >
-              View School
-            </button>
-          </div>
-        </section>
+        <aside className="bg-gray-800 text-white w-64 h-[calc(100vh-4rem)] shadow-md fixed top-16">
+          <nav className="flex flex-col space-y-2 py-4 px-4">
+            {menuItems.map((item) => (
+              <button
+                key={item.component}
+                className={`text-left w-full px-4 py-2 rounded-md hover:bg-gray-700 transition ${
+                  activeComponent === item.component ? "bg-gray-700" : ""
+                }`}
+                onClick={() => setActiveComponent(item.component)}
+                aria-label={item.label}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-        {/* Main Section */}
-        <section className="bg-gray-100 text-black w-full pl-64 pt-5">
-          {activeComponent === "CreateAdmin" && <CreateAdmin />}
-          {activeComponent === "CreateSchool" && <CreateSchool />}
-          {activeComponent === "ViewAdmins" && <ViewAdmins />}
-          {activeComponent === "ViewSchool" && <ViewSchool />}
-          {!activeComponent && (
-            <div className="text-gray-400">
-              Select an option from the sidebar
-            </div>
-          )}
-        </section>
-      </section>
+        {/* Main Content */}
+        <main className="ml-64 p-6 w-full">{renderComponent()}</main>
+      </div>
     </div>
   );
 }

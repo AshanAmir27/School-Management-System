@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-function ViewAnnouncement() {
+function StuAnnouncement() {
   const [announcement, setAnnouncement] = useState([]);
   const [error, setError] = useState(null);
 
@@ -75,4 +75,4 @@ function ViewAnnouncement() {
   );
 }
 
-export default ViewAnnouncement;
+export default StuAnnouncement;

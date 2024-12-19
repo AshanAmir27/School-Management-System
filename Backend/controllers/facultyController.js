@@ -104,7 +104,7 @@ const getStudentList = (req, res) => {
 };
 // function to view assigned classes
 const viewAssignedClasses = (req, res) => {
-  const { teacher_id } = req.query; // Assuming teacher ID is passed as a query parameter
+  const { id: teacher_id } = req.params; // Assuming teacher ID is passed as a query parameter
 
   // Validate teacher_id
   if (!teacher_id) {
@@ -134,9 +134,37 @@ const viewAssignedClasses = (req, res) => {
   });
 };
 
+const getLeaveRequest = (req, res) => {
+  const query = `Select * from std_leave_requests`;
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(500).json({ Error: error });
+    }
+    return res.status(200).json({ request: result });
+  });
+};
+
+const updateLeaveStatus = (req, res) => {
+  const { status } = req.body;
+  const { student_id } = req.params;
+
+  const query = "Update std_leave_requests Set status = ? where student_id = ?";
+
+  db.query(query, [status, student_id], (error, result) => {
+    if (error) {
+      return res.status(500).json({ Error: error });
+    }
+    return res.status(200).json({ "Updated successfully": result });
+  });
+};
+
 const markAttendance = (req, res) => {
-  const { student_id, status } = req.body; // Extract student_id and status from the request body
-  const { faculty_id } = req.params; // Extract faculty_id from route params
+  const { student_id, status } = req.body;
+  const { faculty_id } = req.params;
+
+  console.log("Received Body:", req.body);
+  console.log("Received Params:", req.params);
 
   // Validate input fields
   if (!student_id || !status || !faculty_id) {
@@ -145,14 +173,16 @@ const markAttendance = (req, res) => {
       .json({ error: "Student ID, status, and faculty ID are required." });
   }
 
-  // Ensure status is either 'present' or 'absent'
   if (!["Present", "Absent"].includes(status)) {
     return res
       .status(400)
       .json({ error: "Status must be 'Present' or 'Absent'." });
   }
 
-  // Check if the student already has attendance (based only on student_id)
+  // Get the current date (based on local timezone)
+  // const date = new Date().toLocaleDateString("en-CA"); // Format: YYYY-MM-DD
+
+  // Check if the student already has attendance for today
   const checkQuery = "SELECT * FROM attendance WHERE student_id = ?";
 
   db.query(checkQuery, [student_id], (err, result) => {
@@ -161,38 +191,34 @@ const markAttendance = (req, res) => {
       return res.status(500).json({ error: "Error checking attendance." });
     }
 
-    // If a record exists, prevent adding new attendance
-    if (result.length > 0) {
-      return res.status(400).json({
-        error: "Attendance already marked for this student.",
-      });
-    }
+    // If a record exists, prevent adding new attendance for the same date
+    // if (result.length > 0) {
+    //   return res
+    //     .status(400)
+    //     .json({ error: "Attendance already marked for this student today." });
+    // }
 
     // Insert the attendance record into the database if not already marked
-    const date = new Date().toISOString().slice(0, 10); // Get the current date (YYYY-MM-DD)
-
     const insertQuery =
-      "INSERT INTO attendance (student_id, faculty_id, status, date) VALUES (?, ?, ?, ?)";
+      "INSERT INTO attendance (student_id, faculty_id, status) VALUES ( ?, ?, ?)";
 
-    db.query(
-      insertQuery,
-      [student_id, faculty_id, status, date],
-      (err, result) => {
-        if (err) {
-          console.error("Error inserting attendance:", err);
-          return res.status(500).json({ error: "Failed to mark attendance." });
-        }
-
-        // Respond with success
-        res.status(200).json({ message: "Attendance marked successfully." });
+    db.query(insertQuery, [student_id, faculty_id, status], (err) => {
+      if (err) {
+        console.error("Error inserting attendance:", err);
+        return res.status(500).json({ error: "Failed to mark attendance." });
       }
-    );
+
+      // Respond with success
+      res.status(200).json({ message: "Attendance marked successfully." });
+    });
   });
 };
 
 const updateAttendance = (req, res) => {
   const { student_id, status } = req.body; // Extract student_id and status from the request body
   const { faculty_id } = req.params; // Extract faculty_id from route params
+  console.log("Received Body:", req.body);
+  console.log("Received Params:", req.params);
 
   // Validate input fields
   if (!student_id || !status || !faculty_id) {
@@ -201,16 +227,15 @@ const updateAttendance = (req, res) => {
       .json({ error: "Student ID, status, and faculty ID are required." });
   }
 
-  // Ensure status is either 'present' or 'absent'
   if (!["Present", "Absent"].includes(status)) {
     return res
       .status(400)
       .json({ error: "Status must be 'Present' or 'Absent'." });
   }
 
-  // Check if the attendance record exists for the specific student
+  // Check if the attendance record exists for the specific student on the same date
   const checkQuery =
-    "SELECT * FROM attendance WHERE student_id = ? AND faculty_id = ?";
+    "SELECT * FROM attendance WHERE student_id = ? AND faculty_id = ? ";
 
   db.query(checkQuery, [student_id, faculty_id], (err, result) => {
     if (err) {
@@ -218,18 +243,18 @@ const updateAttendance = (req, res) => {
       return res.status(500).json({ error: "Error checking attendance." });
     }
 
-    // If no record exists for the student, return an error
+    // If no record exists for the student on the same date, return an error
     if (result.length === 0) {
       return res
         .status(404)
-        .json({ error: "Attendance not found for this student." });
+        .json({ error: "Attendance not found for this student today." });
     }
 
-    // Update the attendance record
+    // Update the attendance record for the specific date
     const updateQuery =
-      "UPDATE attendance SET status = ? WHERE student_id = ? AND faculty_id = ?";
+      "UPDATE attendance SET status = ? WHERE student_id = ? AND faculty_id = ? ";
 
-    db.query(updateQuery, [status, student_id, faculty_id], (err, result) => {
+    db.query(updateQuery, [status, student_id, faculty_id], (err) => {
       if (err) {
         console.error("Error updating attendance:", err);
         return res.status(500).json({ error: "Failed to update attendance." });
@@ -242,13 +267,21 @@ const updateAttendance = (req, res) => {
 };
 
 const getAttendance = (req, res) => {
-  const query = "Select * from attendance";
-
-  db.query(query, (error, result) => {
-    if (error) {
-      return res.status(400).json({ errro: error });
+  db.query("SELECT * FROM attendance", [req.params.classId], (err, rows) => {
+    if (err) {
+      console.error("Error fetching attendance:", err.message);
+      return res
+        .status(500)
+        .json({ success: false, message: "Error fetching attendance" });
     }
-    return res.status(200).json({ attendance: result });
+
+    if (!rows || rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No attendance records found" });
+    }
+
+    res.status(200).json({ success: true, data: rows });
   });
 };
 
@@ -274,65 +307,88 @@ const getLeave = (req, res) => {
   );
 };
 
-// Function to add grades for a specific student
 const addGrade = (req, res) => {
-  const { student_id, subject, grade, classes, year } = req.body; // Get the data from the request body
-  const { faculty_id } = req.params; // Get the faculty ID from the route params
+  const {
+    student_id,
+    subject,
+    grade,
+    classId,
+    obtainedMarks,
+    totalMarks,
+    remarks,
+  } = req.body; // Get data from request body
+  const { faculty_id } = req.params; // Get faculty ID from route params
 
-  // Validate the input data
-  if (!student_id || !subject || !grade || !classes || !year) {
+  // Validate input
+  if (
+    !student_id ||
+    !subject ||
+    !grade ||
+    !classId ||
+    !obtainedMarks ||
+    !totalMarks
+  ) {
     return res.status(400).json({
-      error: "Student ID, subject, grade, classes, and year are required.",
+      error:
+        "Student ID, subject, grade, classes, obtainedMarks, and totalMarks are required.",
     });
   }
 
-  // Ensure that the grade is a valid value (you can add more validation if needed)
-  if (!["A", "B", "C", "D", "F"].includes(grade)) {
-    return res.status(400).json({ error: "Invalid grade value." });
+  // Ensure obtainedMarks and totalMarks are valid numbers and obtainedMarks <= totalMarks
+  const obtained = parseFloat(obtainedMarks); // Convert obtainedMarks to number
+  const total = parseFloat(totalMarks); // Convert totalMarks to number
+
+  if (isNaN(obtained) || isNaN(total)) {
+    return res.status(400).json({
+      error: "Marks should be valid numbers.",
+    });
   }
 
-  // Ensure the faculty exists
+  if (obtained > total) {
+    return res.status(400).json({
+      error:
+        "Invalid marks. Obtained marks must be less than or equal to total marks.",
+    });
+  }
+
+  // SQL query to insert the grade
+  const query = `
+    INSERT INTO grades (student_id, classId, faculty_id, subject, obtainedMarks, totalMarks, grade, remarks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
   db.query(
-    "SELECT * FROM faculty WHERE id = ?",
-    [faculty_id],
-    (err, facultyResults) => {
-      if (err || facultyResults.length === 0) {
-        return res.status(404).json({ error: "Faculty not found." });
+    query,
+    [
+      student_id,
+      classId,
+      faculty_id,
+      subject,
+      obtained,
+      total,
+      grade,
+      remarks || null,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Database Error:", err);
+        return res.status(500).json({ error: "Failed to add grade." });
       }
 
-      // Ensure the student exists
-      db.query(
-        "SELECT * FROM students WHERE id = ?",
-        [student_id],
-        (err, studentResults) => {
-          if (err || studentResults.length === 0) {
-            return res.status(404).json({ error: "Student not found." });
-          }
-
-          // Insert the grade into the grades table
-          const query = `
-        INSERT INTO grades (student_id, faculty_id, subject, grade, classes, year)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-
-          db.query(
-            query,
-            [student_id, faculty_id, subject, grade, classes, year],
-            (err, result) => {
-              if (err) {
-                console.error(err);
-                return res
-                  .status(500)
-                  .json({ error: "Failed to insert grade." });
-              }
-
-              res.status(200).json({ message: "Grade added successfully." });
-            }
-          );
-        }
-      );
+      res.status(200).json({ message: "Grade added successfully." });
     }
   );
+};
+
+const viewGrade = (req, res) => {
+  const query = "Select * from grades";
+
+  db.query(query, (error, result) => {
+    if (error) {
+      return res.status(400).json({ "Failed to fetch grades": error });
+    }
+    return res.status(200).json({ grades: result });
+  });
 };
 
 // function to update leave request status
@@ -402,16 +458,69 @@ const viewAnnouncements = (req, res) => {
   });
 };
 
+const assignAssignmentToClass = async (req, res) => {
+  const { class_name, subject, title, description, due_date } = req.body;
+
+  try {
+    // Validate if the class exists in `class_assignments`
+    const [classExists] = await db.query(
+      "SELECT * FROM class_assignments WHERE class_name = ? AND subject = ?",
+      [class_name, subject]
+    );
+
+    if (!classExists) {
+      return res
+        .status(400)
+        .json({ message: "Class or subject does not exist." });
+    }
+
+    // Insert the assignment for the class
+    await db.query(
+      "INSERT INTO class_assignments_tasks (class_name, subject, title, description, due_date) VALUES (?, ?, ?, ?, ?)",
+      [class_name, subject, title, description, due_date]
+    );
+
+    res
+      .status(201)
+      .json({ message: "Assignment successfully assigned to the class!" });
+  } catch (error) {
+    console.error("Error assigning assignment to class:", error);
+    res.status(500).json({ message: "Failed to assign assignment to class." });
+  }
+};
+
+const getClassDetails = async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM class_assignments");
+
+    if (!Array.isArray(rows)) {
+      return res.status(500).json({ message: "Failed to fetch class details" });
+    }
+
+    res.status(200).json({ success: true, data: rows });
+  } catch (error) {
+    console.error("Error fetching class details:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error fetching class details" });
+  }
+};
+
 module.exports = {
   login,
   resetPassword,
   getStudentList,
   getLeave,
+  getLeaveRequest,
+  updateLeaveStatus,
   markAttendance,
   updateAttendance,
   getAttendance,
   addGrade,
+  viewGrade,
   updateLeaveRequestStatus,
   viewAssignedClasses,
   viewAnnouncements,
+  assignAssignmentToClass,
+  getClassDetails,
 };
