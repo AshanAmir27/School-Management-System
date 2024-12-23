@@ -8,7 +8,7 @@ function FacultyAssignedClasses() {
   useEffect(() => {
     const fetchAssignedClasses = async () => {
       try {
-        const facultyId = 1; // Replace with the actual faculty ID, or make it dynamic
+        const facultyId = 3; // Replace with the actual faculty ID, or make it dynamic
         const response = await fetch(
           `http://localhost:5000/api/faculty/${facultyId}/classes`
         );

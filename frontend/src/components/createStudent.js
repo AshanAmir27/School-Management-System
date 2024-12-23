@@ -13,11 +13,17 @@ function CreateStudent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("You must be logged in to create a student account");
+    }
+
     try {
       const response = await fetch("http://localhost:5000/api/admin/students", {
         method: "post",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           username,

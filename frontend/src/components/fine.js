@@ -1,77 +1,239 @@
 import React, { useEffect, useState } from "react";
 
 function Fine() {
-  const [fineDetails, setFineDetails] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [selectedStudentName, setSelectedStudentName] = useState(""); // New state for student name
+  const [fineAmount, setFineAmount] = useState("");
+  const [fineReason, setFineReason] = useState("");
   const [error, setError] = useState(null);
 
+  // Fetch all classes
   useEffect(() => {
-    const fetchFineDetails = async () => {
+    const fetchClasses = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:5000/api/admin/getFineDetail"
-        );
+        const response = await fetch("http://localhost:5000/api/admin/classes");
         if (!response.ok) {
-          throw new Error("Failed to fetch fine details");
+          throw new Error("Failed to fetch classes");
         }
         const data = await response.json();
-        console.log("Fetched Fine Details:", data); // Logging API response
-        setFineDetails(data.fine); // Set state here
+        setClasses(data.classes); // Set available classes
       } catch (err) {
         setError(err.message);
       }
     };
-
-    fetchFineDetails();
+    fetchClasses();
   }, []);
+
+  // Fetch students based on selected class or student ID
+  const fetchStudents = async (class_name, student_id = "") => {
+    try {
+      let url = `http://localhost:5000/api/admin/students?class_name=${class_name}`;
+      if (student_id) {
+        url += `&student_id=${student_id}`;
+      }
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch students");
+      }
+      const data = await response.json();
+      setStudents(data.students); // Set students for the selected class or student ID
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Handle class selection
+  const handleClassChange = (e) => {
+    setSelectedClass(e.target.value);
+    setSelectedStudentId(""); // Reset student ID and name when class changes
+    setSelectedStudentName("");
+    fetchStudents(e.target.value); // Fetch students based on selected class
+  };
+
+  // Handle student ID selection
+  const handleStudentIdChange = (e) => {
+    const studentId = e.target.value;
+    setSelectedStudentId(studentId);
+
+    // Find the student's name from the list of students
+    const selectedStudent = students.find(
+      (student) => student.id === studentId
+    );
+    setSelectedStudentName(selectedStudent ? selectedStudent.name : "");
+
+    // Fetch student based on class and ID
+    if (selectedClass) {
+      fetchStudents(selectedClass, studentId);
+    }
+  };
+
+  // Handle fine submission
+  const handleFineSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!fineAmount || !fineReason || !selectedStudentId) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/admin/student/${selectedStudentId}/fine`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: fineAmount,
+            reason: fineReason,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        setFineAmount("");
+        setFineReason("");
+        setSelectedStudentId("");
+        setSelectedStudentName(""); // Reset student name after submission
+        setError(null);
+        alert("Fine assigned successfully");
+      } else {
+        setError(data.error || "Failed to add fine.");
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center py-6">
-      <h1 className="text-3xl font-bold mb-6">Student Fine Details</h1>
+      <h1 className="text-3xl font-bold mb-6">Charge Fine to Student</h1>
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
-      {fineDetails.length === 0 && !error ? (
-        <p className="text-gray-500">No fine details available.</p>
-      ) : (
-        <div className="w-full max-w-4xl">
-          <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
-                  Student ID
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
-                  Fine Amount
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
-                  Reason
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
-                  Fine Date
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {fineDetails.map((fine) => (
-                <tr key={fine.id} className="border-b hover:bg-gray-100">
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {fine.student_id}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {fine.amount}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {fine.reason}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {new Date(fine.fine_date).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Form to assign fine to a student */}
+      <form
+        onSubmit={handleFineSubmit}
+        className="space-y-4 w-full max-w-md bg-white p-6 rounded-lg shadow-md mb-6"
+      >
+        <div>
+          <label
+            htmlFor="class_name"
+            className="block text-gray-700 font-medium mb-2"
+          >
+            Select Class
+          </label>
+          <select
+            id="class_name"
+            value={selectedClass}
+            onChange={handleClassChange}
+            className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
+          >
+            <option value="">Select a class</option>
+            {classes.map((classItem) => (
+              <option key={classItem.class} value={classItem.class}>
+                {classItem.class}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+
+        {/* {students.length > 0 && ( */}
+        <div>
+          <label
+            htmlFor="student_id"
+            className="block text-gray-700 font-medium mb-2"
+          >
+            Select Student or Enter Student ID
+          </label>
+          <select
+            id="student_id"
+            value={selectedStudentId}
+            onChange={handleStudentIdChange}
+            className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
+          >
+            <option value="">Select a student</option>
+            {students.map((student) => (
+              <option key={student.id} value={student.id}>
+                {student.name} (ID: {student.id})
+              </option>
+            ))}
+          </select>
+          <p className="text-gray-500 mt-2">Or enter student ID directly</p>
+          <input
+            type="text"
+            placeholder="Enter student ID"
+            value={selectedStudentId}
+            onChange={handleStudentIdChange}
+            className="w-full border border-gray-300 rounded-md p-2 mt-2 focus:outline-none focus:ring-blue-300"
+          />
+        </div>
+        {/* )} */}
+
+        {selectedStudentId && selectedStudentName && (
+          <div>
+            <label
+              htmlFor="studentName"
+              className="block text-gray-700 font-medium mb-2"
+            >
+              Student Name
+            </label>
+            <input
+              type="text"
+              id="studentName"
+              value={selectedStudentName}
+              readOnly
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none"
+            />
+          </div>
+        )}
+
+        <div>
+          <label
+            htmlFor="fineAmount"
+            className="block text-gray-700 font-medium mb-2"
+          >
+            Fine Amount
+          </label>
+          <input
+            type="number"
+            id="fineAmount"
+            value={fineAmount}
+            onChange={(e) => setFineAmount(e.target.value)}
+            className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="fineReason"
+            className="block text-gray-700 font-medium mb-2"
+          >
+            Fine Reason
+          </label>
+          <input
+            type="text"
+            id="fineReason"
+            value={fineReason}
+            onChange={(e) => setFineReason(e.target.value)}
+            className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
+          />
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white font-bold py-2 rounded-md hover:bg-blue-600 transition duration-200"
+          >
+            Assign Fine
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

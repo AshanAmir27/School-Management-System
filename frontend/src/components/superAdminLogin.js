@@ -32,6 +32,13 @@ function SuperAdminLogin() {
       if (response.ok) {
         setMessage("Login Successful");
         console.log("Super Admin Details", data.superAdmin);
+
+        // Store the token in localStorage
+        localStorage.setItem("token", data.token);
+
+        // Optionally, check if the token is stored correctly
+        console.log("Stored Token:", localStorage.getItem("token"));
+
         // Navigate to Dashboard here
         navigate("./superAdminDashboard");
       } else {
@@ -49,7 +56,7 @@ function SuperAdminLogin() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/superAdmin/updatePassword",
+        "http://localhost:5000/api/superAdmin/reset",
         {
           method: "POST",
           headers: {

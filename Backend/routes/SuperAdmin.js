@@ -1,6 +1,6 @@
 const express = require("express");
 const superAdminController = require("../controllers/superAdminController");
-const { verifyToken, checkSuperAdminRole } = require("../middleware/auth");
+const { verifyToken } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -14,9 +14,11 @@ router.post("/login", superAdminController.loggedIn);
 router.post(
   "/addSchool",
   verifyToken, // First verify the token
-  checkSuperAdminRole, // Then check if the role is SuperAdmin
   superAdminController.addSchool
 );
+
+// Password reset route
+router.post("/reset", superAdminController.resetPassword);
 
 router.get("/getSchools", superAdminController.getSchool);
 
@@ -25,7 +27,7 @@ router.put("/:id/updateSchools", superAdminController.updateSchool);
 router.delete("/:id/deleteSchools", superAdminController.deleteSchool);
 
 // Route to create new admin
-router.post("/createAdmin", superAdminController.createAdmin);
+router.post("/createAdmin", verifyToken, superAdminController.createAdmin);
 
 // Fetch all admins
 router.get("/getAdmins", superAdminController.getAllAdmins);

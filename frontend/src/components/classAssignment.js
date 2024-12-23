@@ -13,13 +13,26 @@ function ClassAssignment() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Simple form validation
+    if (!teacher_id || !class_name || !subject || !time || !room_no || !year) {
+      setMessage("All fields are required!");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("Unauthorized access. Please login.");
+      return;
+    }
+
     try {
       const response = await fetch(
         "http://localhost:5000/api/admin/assign-class",
         {
-          method: "post",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             teacher_id,
@@ -33,14 +46,15 @@ function ClassAssignment() {
       );
 
       const data = await response.json();
+
       if (response.ok) {
-        setMessage("Class Assigned successfully");
+        setMessage("Class assigned successfully!");
       } else {
         setMessage(data.error || "Information not saved");
       }
     } catch (error) {
       console.log("Error", error);
-      alert("Failed to assign class");
+      setMessage("Failed to assign class.");
     }
   };
 
@@ -63,43 +77,58 @@ function ClassAssignment() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+            <label
+              htmlFor="teacher_id"
+              className="block text-gray-700 font-medium mb-2"
+            >
               Teacher Id
             </label>
             <input
               type="text"
-              id="username"
+              id="teacher_id"
               value={teacher_id}
               onChange={(e) => setTeacher_id(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
             />
           </div>
+
           <div>
-            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+            <label
+              htmlFor="class_name"
+              className="block text-gray-700 font-medium mb-2"
+            >
               Assigned Class
             </label>
             <input
               type="text"
-              id="assigned_class"
+              id="class_name"
               value={class_name}
               onChange={(e) => setClass_name(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
             />
           </div>
+
           <div>
-            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+            <label
+              htmlFor="subject"
+              className="block text-gray-700 font-medium mb-2"
+            >
               Subject
             </label>
             <input
               type="text"
-              id="fullName"
+              id="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
             />
           </div>
+
           <div>
-            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+            <label
+              htmlFor="time"
+              className="block text-gray-700 font-medium mb-2"
+            >
               Time
             </label>
             <input
@@ -107,24 +136,31 @@ function ClassAssignment() {
               id="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
-            />
-          </div>
-          <div>
-            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
-              Room No
-            </label>
-            <input
-              type="number"
-              id="phone"
-              value={room_no}
-              onChange={(e) => setRoom_no(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
             />
           </div>
 
           <div>
-            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+            <label
+              htmlFor="room_no"
+              className="block text-gray-700 font-medium mb-2"
+            >
+              Room No
+            </label>
+            <input
+              type="number"
+              id="room_no"
+              value={room_no}
+              onChange={(e) => setRoom_no(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="year"
+              className="block text-gray-700 font-medium mb-2"
+            >
               Year
             </label>
             <input
@@ -132,9 +168,10 @@ function ClassAssignment() {
               id="year"
               value={year}
               onChange={(e) => setYear(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
             />
           </div>
+
           <div>
             <button
               type="submit"

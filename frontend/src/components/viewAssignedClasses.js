@@ -6,9 +6,21 @@ function ViewAssignedClasses() {
 
   useEffect(() => {
     const fetchAssignedClasses = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Unauthorized Access");
+        return;
+      }
       try {
         const response = await fetch(
-          "http://localhost:5000/api/admin/getAssignedClasses"
+          "http://localhost:5000/api/admin/getAssignedClasses",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch Assigned Classes");

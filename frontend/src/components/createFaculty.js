@@ -13,6 +13,12 @@ function CreateFaculty() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setMessage("You must be logged in to create a faculty account");
+    }
+
     try {
       const response = await fetch(
         "http://localhost:5000/api/admin/createFaculty",
@@ -20,6 +26,7 @@ function CreateFaculty() {
           method: "post",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Include token here
           },
           body: JSON.stringify({
             username,

@@ -15,10 +15,19 @@ function ViewFaculty() {
 
   useEffect(() => {
     const fetchFaculties = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Unauthorized");
+      }
+
       try {
-        console.log("Getting faculty data");
         const response = await fetch(
-          "http://localhost:5000/api/admin/viewFaculty"
+          "http://localhost:5000/api/admin/viewFaculty",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch faculty information");
@@ -51,12 +60,21 @@ function ViewFaculty() {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this faculty?"
     );
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Unauthorized");
+    }
+
     if (confirmDelete) {
       try {
         const response = await fetch(
           `http://localhost:5000/api/admin/faculty/${id}`, // Use the actual id of the faculty
           {
             method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
 
@@ -92,6 +110,11 @@ function ViewFaculty() {
       department,
     };
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Unauthorized");
+    }
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/admin/faculty/${editingFaculty.id}`,
@@ -99,13 +122,13 @@ function ViewFaculty() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(updatedFaculty),
         }
       );
 
       if (response.ok) {
-        // const updatedFacultyData = await response.json();
         setFaculties(
           faculties.map((faculty) =>
             faculty.id === editingFaculty.id
@@ -160,7 +183,7 @@ function ViewFaculty() {
               {faculties.map((faculty, index) => (
                 <tr key={faculty.id} className="border-b hover:bg-gray-100">
                   <td className="px-6 py-3 text-sm text-gray-700">
-                    {index + 1}
+                    {faculty.id}
                   </td>
                   <td className="px-6 py-3 text-sm text-gray-700">
                     {faculty.full_name}

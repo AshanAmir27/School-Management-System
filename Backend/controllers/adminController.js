@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
 const { query } = require("express");
+const jwt = require("jsonwebtoken");
 
 // Controller function to authenticate admin login
 const login = (req, res) => {
@@ -12,9 +13,10 @@ const login = (req, res) => {
       .json({ error: "Username and password are required" });
   }
 
+  // Query the database for the admin
   db.query(
     "SELECT * FROM admin WHERE username = ?",
-    username,
+    [username],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
 
@@ -22,13 +24,32 @@ const login = (req, res) => {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // Direct password comparison (REMOVE bcrypt)
-      if (results[0].password !== password) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
+      // Compare the provided password with the hashed password from the database
+      bcrypt.compare(password, results[0].password, (err, isMatch) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
 
-      res.status(200).json({
-        message: "Login successful",
+        if (!isMatch) {
+          return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        // Generate JWT token for the admin
+        const token = jwt.sign(
+          {
+            id: results[0].id,
+            username: results[0].username,
+            role: "admin", // Add role as part of the payload
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: "1h" } // Set expiration for the token
+        );
+
+        // Return success response with the token
+        res.status(200).json({
+          message: "Login successful",
+          token, // Send the generated token back to the client
+        });
       });
     }
   );
@@ -309,54 +330,57 @@ const getStudent = (req, res) => {
 };
 
 // Function to edit a student account
-const editStudent = (req, res) => {
+const editStudent = async (req, res) => {
   const { id } = req.params;
-  const { full_name, email, phone, class: studentClass, password } = req.body;
+  const {
+    full_name,
+    email,
+    phone,
+    class: studentClass,
+    password,
+    username,
+  } = req.body;
+
+  console.log("Received data:", req.body); // Log the data to check if it contains all the fields
 
   if (!id) {
     return res.status(400).json({ error: "Student ID is required" });
   }
 
-  // If password is provided, hash it
-  let hashedPassword = password;
-  if (password) {
-    bcrypt.hash(password, 10, (err, hashed) => {
-      if (err) return res.status(500).json({ error: err.message });
+  if (!full_name || !email || !phone || !studentClass || !username) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
 
-      hashedPassword = hashed; // Update hashed password
+  try {
+    // Proceed to update student data
+    let query =
+      "UPDATE students SET full_name = ?, email = ?, phone = ?, class = ? WHERE id = ?";
+    let params = [full_name, email, phone, studentClass, id];
 
-      // After hashing the password, proceed with updating the student
-      db.query(
-        "UPDATE students SET full_name = ?, email = ?, phone = ?, class = ?, password = ? WHERE id = ?",
-        [full_name, email, phone, studentClass, hashedPassword, id],
-        (err, result) => {
-          if (err) return res.status(500).json({ error: err.message });
+    // If password is provided, hash it and add it to the query
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      query =
+        "UPDATE students SET full_name = ?, email = ?, phone = ?, class = ?, password = ? WHERE id = ?";
+      params = [full_name, email, phone, studentClass, hashedPassword, id];
+    }
 
-          if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Student not found" });
-          }
-
-          res.status(200).json({ message: "Student updated successfully" });
-        }
-      );
-    });
-  } else {
-    // If password is not provided, simply update other fields
-    db.query(
-      "UPDATE students SET full_name = ?, email = ?, phone = ?, class = ? WHERE id = ?",
-      [full_name, email, phone, studentClass, id],
-      (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ error: "Student not found" });
-        }
-
-        res.status(200).json({ message: "Student updated successfully" });
+    db.query(query, params, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
       }
-    );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      res.status(200).json({ message: "Student updated successfully" });
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
+
 // Function to delete a student account
 const deleteStudent = (req, res) => {
   const { id } = req.params;
@@ -365,13 +389,20 @@ const deleteStudent = (req, res) => {
     return res.status(400).json({ error: "Student ID is required" });
   }
 
+  console.log(`Deleting student with ID: ${id}`);
+
   db.query("DELETE FROM students WHERE id = ?", [id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      console.error("Database error during DELETE operation:", err); // Log the error
+      return res.status(500).json({ error: err.message });
+    }
 
     if (result.affectedRows === 0) {
+      console.log(`No student found with ID: ${id}`);
       return res.status(404).json({ error: "Student not found" });
     }
 
+    console.log(`Student with ID: ${id} deleted successfully`);
     res.status(200).json({ message: "Student deleted successfully" });
   });
 };
@@ -965,9 +996,9 @@ const assignClassToFaculty = (req, res) => {
 
       // Insert the class assignment into the database
       const query = `
-      INSERT INTO class_assignments (teacher_id, class_name, subject, time, room_no, year)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
+        INSERT INTO class_assignments (teacher_id, class_name, subject, time, room_no, year)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
 
       db.query(
         query,
@@ -992,6 +1023,27 @@ const getAssignedClasses = (_, res) => {
     }
     return res.status(200).json({ AssignedClass: result });
   });
+};
+
+// Controller functions:
+const getClasses = (req, res) => {
+  const query = "SELECT DISTINCT class FROM students"; // Fetch all unique classes
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error("Error fetching classes:", err);
+      return res.status(500).json({ error: "Failed to fetch classes." });
+    }
+    res.status(200).json({ classes: result });
+  });
+};
+
+// Get students by class or student_id (optional)
+const getStudents = async (req, res) => {
+  const { class_name, student_id } = req.query;
+
+  const query = "Select username from students where class = ?";
+
+  db.query();
 };
 
 // Export controller functions
@@ -1039,4 +1091,8 @@ module.exports = {
   addFeePayment,
   getFeeDetail,
   getStudentFines,
+
+  getStudents,
+  getClasses,
+  getStudents,
 };

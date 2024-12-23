@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function SuperAdminLogin() {
+function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -25,6 +25,11 @@ function SuperAdminLogin() {
       if (response.ok) {
         setMessage("Login Successful");
         console.log("Admin Details", data.admin);
+
+        localStorage.setItem("token", data.token);
+
+        console.log("Stored Token:", localStorage.getItem("token"));
+
         navigate("/adminDashboard");
       } else {
         setMessage(data.error || "Login Failed");
@@ -102,4 +107,4 @@ function SuperAdminLogin() {
   );
 }
 
-export default SuperAdminLogin;
+export default AdminLogin;

@@ -13,16 +13,17 @@ router.post("/leave-request", facultyController.getLeave);
 
 router.get("/getStudentList", facultyController.getStudentList);
 
+// Add route
+router.post("/markAttendance", facultyController.markAttendance);
+
+// Add route
 router.get("/getAttendance", facultyController.getAttendance);
 
-// Route to mark attendance for a student
-router.post("/:faculty_id/mark-attendance", facultyController.markAttendance);
+// Add the route
+router.get("/getClasses", facultyController.getDistinctClasses);
 
-// Route to update attendance for a student
-router.put(
-  "/:faculty_id/update-attendance",
-  facultyController.updateAttendance
-);
+// Add the route
+router.get("/getStudents", facultyController.getStudentsByClass);
 
 // Route to add grades for a specific student
 router.post("/:faculty_id/grades", facultyController.addGrade);

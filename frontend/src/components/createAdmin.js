@@ -11,6 +11,14 @@ function CreateAdmin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Get the token from localStorage
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setMessage("You must be logged in to create an admin.");
+      return;
+    }
+
     try {
       const response = await fetch(
         "http://localhost:5000/api/superAdmin/createAdmin",
@@ -18,6 +26,7 @@ function CreateAdmin() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Include token here
           },
           body: JSON.stringify({
             username,
@@ -34,6 +43,7 @@ function CreateAdmin() {
         setMessage("Information saved successfully");
         console.log("Information saved : ", data.message);
 
+        // Clear form inputs after successful creation
         setUsername("");
         setPassword("");
         setEmail("");

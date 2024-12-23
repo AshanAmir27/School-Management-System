@@ -1,5 +1,7 @@
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
+const jwt = require("jsonwebtoken");
+const { generateToken } = require("../utils/jwt");
 
 // Controller function to register a new super admin
 const registerSuperAdmin = (req, res) => {
@@ -54,18 +56,66 @@ const registerSuperAdmin = (req, res) => {
   );
 };
 
+// Function to handle student password reset
+const resetPassword = (req, res) => {
+  const { username, password } = req.body;
+
+  // Check if username and password were provided
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: "Username and password are required." });
+  }
+
+  // Query the database to find the student with the provided username
+  const query = "SELECT * FROM super_admin WHERE username = ?";
+
+  db.query(query, [username], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Database error occurred." });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    // Hash the new password
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Error hashing the password." });
+      }
+
+      // Update the student's password in the database with the hashed password
+      const updateQuery = "UPDATE students SET password = ? WHERE username = ?";
+
+      db.query(updateQuery, [hashedPassword, username], (err, result) => {
+        if (err) {
+          console.error(err);
+          return res
+            .status(500)
+            .json({ message: "Error updating password in the database." });
+        }
+
+        return res
+          .status(200)
+          .json({ message: "Password reset successfully." });
+      });
+    });
+  });
+};
+
 // Controller function to authenticate the super admin login
 const loggedIn = (req, res) => {
   const { username, password } = req.body;
 
-  // Check if both username and password are provided
   if (!username || !password) {
     return res
       .status(400)
       .json({ error: "Username and password are required" });
   }
 
-  // Query to check if the super admin exists with the provided username
   db.query(
     "SELECT * FROM super_admin WHERE username = ?",
     [username],
@@ -88,10 +138,22 @@ const loggedIn = (req, res) => {
           return res.status(401).json({ error: "Invalid credentials" });
         }
 
-        // If passwords match, return super admin details
+        // Generate JWT token with user details
+        const token = jwt.sign(
+          {
+            id: results[0].id,
+            username: results[0].username,
+          },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "1h",
+          }
+        );
+
+        // Return success response with token
         res.status(200).json({
           message: "Login successful",
-          superAdmin: results[0], // Send back the super admin details
+          token,
         });
       });
     }
@@ -125,29 +187,35 @@ const addSchool = (req, res) => {
 const createAdmin = (req, res) => {
   const { username, password, full_name, email, school_id } = req.body;
 
-  // Check if username and password are provided
+  // Check if username, password, and email are provided
   if (!username || !password || !email) {
     return res.status(400).json({ error: "Fields are required" });
   }
 
-  const query = `
-  INSERT INTO admin (username, password, full_name, email, school_id)
-  VALUES (?, ?, ?, ?, ?)
-  `;
-
-  const user = [username, password, full_name, email, school_id];
-
-  db.query(query, user, (err, result) => {
+  // Hash the password before saving it in the database
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    res.status(201).json({
-      message: "Admin created successfully",
-      result,
+    const query = `
+      INSERT INTO admin (username, password, full_name, email, school_id)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    const user = [username, hashedPassword, full_name, email, school_id];
+
+    db.query(query, user, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      res.status(201).json({
+        message: "Admin created successfully",
+        result,
+      });
     });
   });
-  // );
 };
 
 // Controller function to fetch all admins
@@ -278,6 +346,7 @@ const deleteSchool = (req, res) => {
 
 module.exports = {
   registerSuperAdmin,
+  resetPassword,
   loggedIn,
   addSchool,
   createAdmin,
