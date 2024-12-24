@@ -5,12 +5,19 @@ function ApproveLeave() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to view leave request");
+    }
     const fetchLeaveRequest = async () => {
       try {
         const response = await fetch(
           "http://localhost:5000/api/admin/getLeave_request",
           {
             method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
         if (!response.ok) {
@@ -27,6 +34,11 @@ function ApproveLeave() {
   }, []);
 
   const handleStatusChange = async (id, status) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to update leave status");
+    }
+
     try {
       const response = await fetch(
         "http://localhost:5000/api/admin/updateLeaveStatus",
@@ -34,6 +46,7 @@ function ApproveLeave() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ id, status }),
         }

@@ -13,8 +13,16 @@ function FeeStructure() {
 
   // Fetch all fee structures
   const fetchFeeStructures = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to view fee structures");
+    }
     try {
-      const response = await fetch("http://localhost:5000/api/admin/fees/all");
+      const response = await fetch("http://localhost:5000/api/admin/fees/all", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch fee structures");
       }
@@ -33,6 +41,11 @@ function FeeStructure() {
   // Handle create/update form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to update fee structures");
+    }
     try {
       const method = form.id ? "PUT" : "POST";
       const endpoint = form.id
@@ -40,7 +53,10 @@ function FeeStructure() {
         : "http://localhost:5000/api/admin/fees";
       const response = await fetch(endpoint, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           class: form.class_name,
           amount: form.amount,
@@ -60,10 +76,19 @@ function FeeStructure() {
 
   // Handle delete fee structure
   const handleDelete = async (id) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to delete fee structures");
+    }
     try {
       const response = await fetch(
         `http://localhost:5000/api/admin/fees/${id}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (!response.ok) {
         throw new Error("Failed to delete fee structure");

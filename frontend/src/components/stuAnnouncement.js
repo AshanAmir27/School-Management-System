@@ -5,23 +5,38 @@ function StuAnnouncement() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchSchools = async () => {
+    const fetchAnnouncements = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+      if (!token) {
+        setError("User is not logged in. Please log in to view announcements.");
+        return;
+      }
+
       try {
         const response = await fetch(
-          "http://localhost:5000/api/admin/getAnnouncements"
+          "http://localhost:5000/api/admin/getAnnouncements",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+            },
+          }
         );
+
         if (!response.ok) {
-          throw new Error("Failed to fetch announcements");
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to fetch announcements");
         }
+
         const data = await response.json();
-        console.log("API response:", data);
-        setAnnouncement(Array.isArray(data) ? data : []); // Ensure it's an array
+        console.log("Announcements data:", data);
+        setAnnouncement(Array.isArray(data) ? data : []);
       } catch (err) {
         setError(err.message);
+        console.error("Error fetching announcements:", err); // Debugging
       }
     };
 
-    fetchSchools();
+    fetchAnnouncements();
   }, []);
 
   return (

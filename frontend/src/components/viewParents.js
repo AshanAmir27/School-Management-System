@@ -8,10 +8,20 @@ function ViewParents() {
 
   // Fetch Parent data
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    console.log(token);
+    if (!token) {
+      alert("You must be logged in to view parent information");
+    }
     const fetchParents = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/admin/viewParents"
+          "http://localhost:5000/api/admin/viewParents",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch parent information");

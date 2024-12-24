@@ -39,10 +39,10 @@ const login = (req, res) => {
           {
             id: results[0].id,
             username: results[0].username,
-            role: "admin", // Add role as part of the payload
+            role: "admin",
           },
           process.env.JWT_SECRET,
-          { expiresIn: "1h" } // Set expiration for the token
+          { expiresIn: "1h" }
         );
 
         // Return success response with the token

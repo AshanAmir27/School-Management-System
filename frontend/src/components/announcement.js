@@ -8,6 +8,10 @@ function Announcement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to add announcement information");
+    }
     try {
       const response = await fetch(
         "http://localhost:5000/api/admin/createAnnouncement",
@@ -15,6 +19,7 @@ function Announcement() {
           method: "post",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             title,

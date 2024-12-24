@@ -34,27 +34,47 @@ router.delete("/students/:id", verifyToken, adminController.deleteStudent);
 
 // Parent management routes
 router.post("/parents", verifyToken, adminController.createParent);
-router.get("/viewParents", adminController.getParents);
+router.get("/viewParents", verifyToken, adminController.getParents);
 router.put("/parents/:id", verifyToken, adminController.editParent);
 router.delete("/parents/:id", verifyToken, adminController.deleteParent);
 
 // Leave management route
-router.put("/updateLeaveStatus", adminController.updateLeaveStatus);
-router.get("/getLeave_request", adminController.getApproveLeave);
+router.put(
+  "/updateLeaveStatus",
+  verifyToken,
+  adminController.updateLeaveStatus
+);
+router.get("/getLeave_request", verifyToken, adminController.getApproveLeave);
 
 // Fee structure routes
-router.post("/fees", adminController.createFeeStructure);
-router.put("/fees/:id", adminController.updateFeeStructure);
-router.get("/fees/all", adminController.getAllFeeStructures);
-router.get("/fees/:id", adminController.getFeeStructure);
-router.delete("/fees/:id", adminController.deleteFeeStructure);
+router.post("/fees", verifyToken, adminController.createFeeStructure);
+router.put("/fees/:id", verifyToken, adminController.updateFeeStructure);
+router.get("/fees/all", verifyToken, adminController.getAllFeeStructures);
+router.get("/fees/:id", verifyToken, adminController.getFeeStructure);
+router.delete("/fees/:id", verifyToken, adminController.deleteFeeStructure);
 
 // Routes for announcements
-router.post("/createAnnouncement", adminController.createAnnouncement);
-router.get("/getAnnouncements", adminController.getAnnouncements);
-router.get("/getAnnouncement/:id", adminController.getAnnouncementById);
-router.put("/updateAnnouncement/:id", adminController.updateAnnouncement);
-router.delete("/deleteAnnouncement/:id", adminController.deleteAnnouncement);
+router.post(
+  "/createAnnouncement",
+  verifyToken,
+  adminController.createAnnouncement
+);
+router.get("/getAnnouncements", verifyToken, adminController.getAnnouncements);
+router.get(
+  "/getAnnouncement/:id",
+  verifyToken,
+  adminController.getAnnouncementById
+);
+router.put(
+  "/updateAnnouncement/:id",
+  verifyToken,
+  adminController.updateAnnouncement
+);
+router.delete(
+  "/deleteAnnouncement/:id",
+  verifyToken,
+  adminController.deleteAnnouncement
+);
 
 // Add a fine
 router.post("/student/:id/fine", adminController.addFineToStudent);
