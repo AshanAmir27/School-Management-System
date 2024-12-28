@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const facultyController = require("../controllers/facultyController");
+const { verifyToken } = require("../middleware/auth");
 
 //Route to get logged in
 router.post("/login", facultyController.login);
@@ -9,7 +10,7 @@ router.post("/login", facultyController.login);
 router.post("/reset-password", facultyController.resetPassword);
 
 //Route to get leave
-router.post("/leave-request", facultyController.getLeave);
+router.post("/leave-request", verifyToken, facultyController.getLeave);
 
 router.get("/getStudentList", facultyController.getStudentList);
 
@@ -28,7 +29,7 @@ router.get("/getStudents", facultyController.getStudentsByClass);
 // Route to add grades for a specific student
 router.post("/:faculty_id/grades", facultyController.addGrade);
 
-router.get("/getGrades", facultyController.viewGrade);
+router.get("/getGrades", verifyToken, facultyController.viewGrade);
 
 router.get("/getLeaveRequest", facultyController.getLeaveRequest);
 
@@ -44,7 +45,7 @@ router.put(
 );
 
 // Route to view assigned classes
-router.get("/:id/classes", facultyController.viewAssignedClasses);
+router.get("/:id/classes", verifyToken, facultyController.viewAssignedClasses);
 
 router.post(
   "/assign-class-assignment",

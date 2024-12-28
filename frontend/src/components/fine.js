@@ -5,7 +5,7 @@ function Fine() {
   const [students, setStudents] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
-  const [selectedStudentName, setSelectedStudentName] = useState(""); // New state for student name
+  const [selectedStudentName, setSelectedStudentName] = useState(""); // State for student name
   const [fineAmount, setFineAmount] = useState("");
   const [fineReason, setFineReason] = useState("");
   const [error, setError] = useState(null);
@@ -27,19 +27,16 @@ function Fine() {
     fetchClasses();
   }, []);
 
-  // Fetch students based on selected class or student ID
-  const fetchStudents = async (class_name, student_id = "") => {
+  // Fetch students based on selected class
+  const fetchStudents = async (class_name) => {
     try {
-      let url = `http://localhost:5000/api/admin/students?class_name=${class_name}`;
-      if (student_id) {
-        url += `&student_id=${student_id}`;
-      }
+      const url = `http://localhost:5000/api/admin/students?class_name=${class_name}`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Failed to fetch students");
       }
       const data = await response.json();
-      setStudents(data.students); // Set students for the selected class or student ID
+      setStudents(data.students); // Set students for the selected class
     } catch (err) {
       setError(err.message);
     }
@@ -48,9 +45,9 @@ function Fine() {
   // Handle class selection
   const handleClassChange = (e) => {
     setSelectedClass(e.target.value);
-    setSelectedStudentId(""); // Reset student ID and name when class changes
+    setSelectedStudentId("");
     setSelectedStudentName("");
-    fetchStudents(e.target.value); // Fetch students based on selected class
+    fetchStudents(e.target.value);
   };
 
   // Handle student ID selection
@@ -62,11 +59,10 @@ function Fine() {
     const selectedStudent = students.find(
       (student) => student.id === studentId
     );
-    setSelectedStudentName(selectedStudent ? selectedStudent.name : "");
-
-    // Fetch student based on class and ID
-    if (selectedClass) {
-      fetchStudents(selectedClass, studentId);
+    if (selectedStudent) {
+      setSelectedStudentName(selectedStudent.name); // Set student name if found
+    } else {
+      setSelectedStudentName(""); // Reset if no match is found
     }
   };
 
@@ -99,7 +95,7 @@ function Fine() {
         setFineAmount("");
         setFineReason("");
         setSelectedStudentId("");
-        setSelectedStudentName(""); // Reset student name after submission
+        setSelectedStudentName("");
         setError(null);
         alert("Fine assigned successfully");
       } else {
@@ -143,13 +139,12 @@ function Fine() {
           </select>
         </div>
 
-        {/* {students.length > 0 && ( */}
         <div>
           <label
             htmlFor="student_id"
             className="block text-gray-700 font-medium mb-2"
           >
-            Select Student or Enter Student ID
+            Select Student
           </label>
           <select
             id="student_id"
@@ -164,24 +159,15 @@ function Fine() {
               </option>
             ))}
           </select>
-          <p className="text-gray-500 mt-2">Or enter student ID directly</p>
-          <input
-            type="text"
-            placeholder="Enter student ID"
-            value={selectedStudentId}
-            onChange={handleStudentIdChange}
-            className="w-full border border-gray-300 rounded-md p-2 mt-2 focus:outline-none focus:ring-blue-300"
-          />
         </div>
-        {/* )} */}
 
-        {selectedStudentId && selectedStudentName && (
+        {selectedStudentName && (
           <div>
             <label
               htmlFor="studentName"
               className="block text-gray-700 font-medium mb-2"
             >
-              Student Name
+              Selected Student Name
             </label>
             <input
               type="text"

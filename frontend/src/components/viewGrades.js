@@ -9,9 +9,20 @@ function ViewGrades() {
   useEffect(() => {
     // Fetch grades when the component mounts
     const fetchGrades = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("You need to be logged in to view grades.");
+        setLoading(false);
+        return;
+      }
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/faculty/getGrades"
+          "http://localhost:5000/api/faculty/getGrades",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         setGrades(response.data.grades); // Assuming response contains a 'grades' array
         setLoading(false);

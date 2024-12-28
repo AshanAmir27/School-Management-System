@@ -29,6 +29,12 @@ function FacultySubmitLeave() {
       leave_reason: leave_reason,
     };
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("Unauthorized. Please login.");
+      return;
+    }
+
     try {
       const response = await fetch(
         "http://localhost:5000/api/faculty/leave-request",
@@ -36,6 +42,7 @@ function FacultySubmitLeave() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(leaveData),
         }

@@ -11,6 +11,12 @@ function CreateSchool() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("You need to login first");
+      return;
+    }
+
     try {
       const response = await fetch(
         "http://localhost:5000/api/superAdmin/addSchool",
@@ -18,6 +24,7 @@ function CreateSchool() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             name,

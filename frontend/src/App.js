@@ -5,6 +5,7 @@ import SuperAdminLogin from "./components/superAdminLogin";
 import SuperAdminDashboard from "./components/superAdminDashboard";
 import CreateAdmin from "./components/createAdmin";
 import AdminLogin from "./components/adminLogin";
+import ViewFine from "./components/viewFine";
 import ParentLogin from "./components/parentLogin";
 import ParentDashboard from "./components/parentDashboard";
 import StudentLogin from "./components/studentLogin";
@@ -37,6 +38,7 @@ function App() {
           />
           <Route path="/createAdmin" element={<CreateAdmin />} />
           <Route path="/adminLogin" element={<AdminLogin />} />
+          <Route path="/viewFine" element={<ViewFine />} />
           <Route path="/studentLogin" element={<StudentLogin />} />
           <Route path="/parentLogin" element={<ParentLogin />} />
           <Route path="/parentDashboard" element={<ParentDashboard />} />

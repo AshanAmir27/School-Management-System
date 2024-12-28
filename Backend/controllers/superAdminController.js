@@ -183,36 +183,51 @@ const addSchool = (req, res) => {
   );
 };
 
-// Controller function to create a new admin
 const createAdmin = (req, res) => {
   const { username, password, full_name, email, school_id } = req.body;
 
   // Check if username, password, and email are provided
-  if (!username || !password || !email) {
+  if (!username || !password || !email || !school_id) {
     return res.status(400).json({ error: "Fields are required" });
   }
 
-  // Hash the password before saving it in the database
-  bcrypt.hash(password, 10, (err, hashedPassword) => {
+  // Check if the school_id exists in the schools table
+  const checkSchoolQuery = "SELECT * FROM schools WHERE id = ?";
+
+  db.query(checkSchoolQuery, [school_id], (err, result) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    const query = `
-      INSERT INTO admin (username, password, full_name, email, school_id)
-      VALUES (?, ?, ?, ?, ?)
-    `;
+    if (result.length === 0) {
+      return res.status(400).json({
+        error:
+          "The school id does not exist in which you are trying to add an admin",
+      });
+    }
 
-    const user = [username, hashedPassword, full_name, email, school_id];
-
-    db.query(query, user, (err, result) => {
+    // Hash the password before saving it in the database
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
 
-      res.status(201).json({
-        message: "Admin created successfully",
-        result,
+      const query = `
+        INSERT INTO admin (username, password, full_name, email, school_id)
+        VALUES (?, ?, ?, ?, ?)
+      `;
+
+      const user = [username, hashedPassword, full_name, email, school_id];
+
+      db.query(query, user, (err, result) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        res.status(201).json({
+          message: "Admin created successfully",
+          result,
+        });
       });
     });
   });

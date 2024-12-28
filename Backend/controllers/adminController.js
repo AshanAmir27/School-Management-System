@@ -756,17 +756,14 @@ const addFineToStudent = (req, res) => {
 // function to update fine of student
 const updateFineForStudent = (req, res) => {
   const { id } = req.params; // student ID
-  const { fine_id, amount, reason, status } = req.body; // fine ID and updated data
+  const { status } = req.body; // fine ID and updated data
 
-  if (!fine_id || !amount || !reason || !status) {
-    return res
-      .status(400)
-      .json({ error: "Fine ID, amount, reason, and status are required." });
+  if (!status) {
+    return res.status(400).json({ error: "Status is required." });
   }
 
-  const query =
-    "UPDATE fines SET amount = ?, reason = ?, status = ? WHERE id = ? AND student_id = ?";
-  db.query(query, [amount, reason, status, fine_id, id], (err, result) => {
+  const query = "UPDATE fines SET  status = ? WHERE student_id = ?";
+  db.query(query, [status, id], (err, result) => {
     if (err) {
       console.error("Error updating fine:", err);
       return res.status(500).json({ error: "Failed to update fine." });
@@ -1039,11 +1036,40 @@ const getClasses = (req, res) => {
 
 // Get students by class or student_id (optional)
 const getStudents = async (req, res) => {
-  const { class_name, student_id } = req.query;
+  const { class_name, student_id } = req.query; // Extract class_name and student_id from query params
 
-  const query = "Select username from students where class = ?";
+  // Validate that the class_name is provided
+  if (!class_name) {
+    return res.status(400).json({ error: "Class name is required" });
+  }
 
-  db.query();
+  // Construct the base SQL query
+  let query = "SELECT id, username FROM students WHERE class = ?";
+  const params = [class_name];
+
+  // If student_id is provided, add it to the query for further filtering
+  if (student_id) {
+    query += " AND id = ?";
+    params.push(student_id);
+  }
+
+  try {
+    // Execute the query
+    db.query(query, params, (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch students from the database" });
+      }
+
+      // Return the results to the client
+      res.status(200).json({ students: results });
+    });
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    res.status(500).json({ error: "An unexpected error occurred" });
+  }
 };
 
 // Export controller functions

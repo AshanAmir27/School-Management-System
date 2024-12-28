@@ -28,6 +28,7 @@ function FacultyLogin() {
       if (response.ok) {
         setMessage("Login Successful");
         console.log("Faculty information", data.message);
+        localStorage.setItem("token", data.token);
         navigate("/facultyDashboard");
       } else {
         setMessage(data.error || "Invalid credentials");

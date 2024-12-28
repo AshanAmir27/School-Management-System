@@ -16,6 +16,8 @@ import FacultyAssignedClasses from "./facultyAssignedClasses";
 function FacultyDashboard() {
   // State to manage which component to display
   const [activeComponent, setActiveComponent] = useState(null);
+  const token = localStorage.getItem("token");
+  console.log("Token", token);
 
   return (
     <div className="font-sans antialiased bg-gray-100 min-h-screen">

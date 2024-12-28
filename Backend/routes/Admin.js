@@ -78,11 +78,15 @@ router.delete(
 
 // Add a fine
 router.post("/student/:id/fine", adminController.addFineToStudent);
-router.get("/getFineDetail", adminController.getFineDetail);
+router.get("/getFineDetail", verifyToken, adminController.getFineDetail);
 // Update a fine
-router.put("/student/:id/fine", adminController.updateFineForStudent);
+router.put(
+  "/student/:id/fine",
+  verifyToken,
+  adminController.updateFineForStudent
+);
 // Delete a fine
-router.delete("/student/:id/fine", adminController.deleteFineForStudent);
+router.delete("/:id/fine", adminController.deleteFineForStudent);
 
 // Generate fine slip
 router.get(

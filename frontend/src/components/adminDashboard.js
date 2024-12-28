@@ -10,7 +10,7 @@ import CreateParents from "./createParents";
 import ViewParents from "./viewParents";
 import CreateStudent from "./createStudent";
 import ViewStudent from "./viewStudent";
-
+import ViewFine from "./viewFine";
 import ClassAssignment from "./classAssignment";
 import ViewAssignedClasses from "./viewAssignedClasses";
 import ApproveLeave from "./approveLeave";
@@ -125,6 +125,12 @@ function AdminDashboard() {
             </button>
             <button
               className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
+              onClick={() => setActiveComponent("ViewFine")}
+            >
+              View Fine
+            </button>
+            <button
+              className="w-full text-left text-lg font-semibold hover:bg-blue-700 px-4 py-2 rounded-md transition duration-200"
               onClick={() => setActiveComponent("FeePayment")}
             >
               Fee Payments
@@ -147,6 +153,7 @@ function AdminDashboard() {
           {activeComponent === "Announcements" && <Announcement />}
           {activeComponent === "viewAnnouncements" && <ViewAnnouncement />}
           {activeComponent === "Fine" && <Fine />}
+          {activeComponent === "ViewFine" && <ViewFine />}
           {activeComponent === "FeePayment" && <FeePayment />}
 
           {!activeComponent && (

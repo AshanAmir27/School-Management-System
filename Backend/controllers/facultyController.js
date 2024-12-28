@@ -1,5 +1,8 @@
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
+const { json } = require("express");
+const jwt = require("jsonwebtoken");
+const { generateToken } = require("../utils/jwt");
 
 // Controller function to authenticate admin login
 const login = (req, res) => {
@@ -28,8 +31,21 @@ const login = (req, res) => {
           return res.status(401).json({ error: "Invalid credentials" });
         }
 
+        // Generate JWT token with faculty details
+        const token = jwt.sign(
+          {
+            id: results[0].id,
+            username: results[0].username,
+          },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "1h",
+          }
+        );
+
         res.status(200).json({
           message: "Login successful",
+          token,
         });
       });
     }
@@ -265,12 +281,10 @@ const markAttendance = (req, res) => {
                 (err, result) => {
                   if (err) {
                     console.error("Error updating attendance:", err.message);
-                    return res
-                      .status(500)
-                      .json({
-                        success: false,
-                        message: "Error updating attendance",
-                      });
+                    return res.status(500).json({
+                      success: false,
+                      message: "Error updating attendance",
+                    });
                   }
                   console.log(
                     `Attendance for student ${entry.student_id} updated.`
@@ -290,12 +304,10 @@ const markAttendance = (req, res) => {
                 (err, result) => {
                   if (err) {
                     console.error("Error inserting attendance:", err.message);
-                    return res
-                      .status(500)
-                      .json({
-                        success: false,
-                        message: "Error inserting attendance",
-                      });
+                    return res.status(500).json({
+                      success: false,
+                      message: "Error inserting attendance",
+                    });
                   }
                   console.log(
                     `Attendance for student ${entry.student_id} inserted.`

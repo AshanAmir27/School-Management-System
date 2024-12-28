@@ -6,9 +6,22 @@ function ViewAnnouncement() {
 
   useEffect(() => {
     const fetchSchools = async () => {
+      const token = localStorage.getItem("token"); // Retrieve the token from localStorage
+      console.log("Token retrieved:", token); // Debugging
+
+      if (!token) {
+        setError("User is not logged in. Please log in to view announcements.");
+        return;
+      }
       try {
         const response = await fetch(
-          "http://localhost:5000/api/admin/getAnnouncements"
+          "http://localhost:5000/api/admin/getAnnouncements",
+          {
+            headers: {
+              "Content-Type": "application/json", // Include Content-Type header
+              Authorization: `Bearer ${token}`, // Send token in Authorization header
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch announcements");

@@ -7,10 +7,22 @@ function FacultyAssignedClasses() {
 
   useEffect(() => {
     const fetchAssignedClasses = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return setError("Token not found. Please login.");
+      }
+
       try {
         const facultyId = 3; // Replace with the actual faculty ID, or make it dynamic
         const response = await fetch(
-          `http://localhost:5000/api/faculty/${facultyId}/classes`
+          `http://localhost:5000/api/faculty/${facultyId}/classes`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
         if (!response.ok) {

@@ -15,8 +15,6 @@ function AddGrade() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const facultyId = 1; // Replace with dynamic value if needed
-
   // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,6 +33,7 @@ function AddGrade() {
     setError("");
 
     try {
+      const facultyId = 1; // Replace with dynamic value if needed
       const response = await axios.post(
         `http://localhost:5000/api/faculty/${facultyId}/grades`,
         formData,
