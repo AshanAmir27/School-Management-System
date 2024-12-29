@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 function CreateParents() {
+  const [school_id, setSchoolId] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [full_name, setFullName] = useState("");
@@ -27,6 +28,7 @@ function CreateParents() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          school_id,
           username,
           password,
           full_name,
@@ -39,6 +41,7 @@ function CreateParents() {
       const data = await response.json();
       if (response.ok) {
         setMessage("Parent Account created successfully");
+        setSchoolId("");
         setUsername("");
         setPassword("");
         setFullName("");
@@ -46,13 +49,48 @@ function CreateParents() {
         setPhone("");
         setStudent_id("");
       } else {
-        setMessage(data.error || "Information not saved");
+        setMessage(data.error || "Failed to create parent account");
       }
     } catch (error) {
       console.log("Error", error);
       alert("Failed to create parent account");
     }
   };
+
+  useEffect(() => {
+    const getSchoolId = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setMessage("You must be logged in to create faculty account");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/admin/getSchoolId",
+          {
+            method: "Get",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setSchoolId(data.schoolId);
+          console.log("School Id fetched: ", data.schoolId);
+        } else {
+          setMessage(data.error || "Failed to fetch school Id");
+        }
+      } catch (error) {
+        console.error("Error fetching school id: ", error);
+        setMessage("An error occurred while fetching school id");
+      }
+    };
+    getSchoolId();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center items-center">
@@ -76,6 +114,31 @@ function CreateParents() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+              School Id
+            </label>
+            <input
+              type="number"
+              id="schoolId"
+              value={school_id}
+              readOnly
+              onChange={(e) => setSchoolId(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+            />
+          </div>
+          <div>
+            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+              Student Id
+            </label>
+            <input
+              type="text"
+              id="student_id"
+              value={student_id}
+              onChange={(e) => setStudent_id(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+            />
+          </div>
+          <div>
+            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
               Username
             </label>
             <input
@@ -92,7 +155,7 @@ function CreateParents() {
             </label>
             <input
               type="password"
-              id="username"
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
@@ -135,18 +198,6 @@ function CreateParents() {
             />
           </div>
 
-          <div>
-            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
-              Student Id
-            </label>
-            <input
-              type="text"
-              id="student_id"
-              value={student_id}
-              onChange={(e) => setStudent_id(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
-            />
-          </div>
           <div>
             <button
               type="submit"

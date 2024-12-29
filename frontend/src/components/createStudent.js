@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 function CreateStudent() {
+  const [schoolId, setSchoolId] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [full_name, setFullName] = useState("");
@@ -26,6 +27,7 @@ function CreateStudent() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          schoolId,
           username,
           password,
           full_name,
@@ -54,6 +56,41 @@ function CreateStudent() {
       alert("Failed to create student account");
     }
   };
+
+  useEffect(() => {
+    const getSchoolId = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setMessage("You must be logged in to create faculty account");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/admin/getSchoolId",
+          {
+            method: "Get",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setSchoolId(data.schoolId);
+          console.log("School Id fetched: ", data.schoolId);
+        } else {
+          setMessage(data.error || "Failed to fetch school Id");
+        }
+      } catch (error) {
+        console.error("Error fetching school id: ", error);
+        setMessage("An error occurred while fetching school id");
+      }
+    };
+    getSchoolId();
+  }, []);
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center items-center">
       <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
@@ -76,6 +113,19 @@ function CreateStudent() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="" className="block text-gray-700 font-medium mb-2">
+              School Id
+            </label>
+            <input
+              type="number"
+              id="schoolId"
+              value={schoolId}
+              readOnly
+              onChange={(e) => setSchoolId(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "
+            />
+          </div>
+          <div>
+            <label htmlFor="" className="block text-gray-700 font-medium mb-2">
               Username
             </label>
             <input
@@ -92,7 +142,7 @@ function CreateStudent() {
             </label>
             <input
               type="password"
-              id="username"
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300 "

@@ -57,10 +57,19 @@ const login = (req, res) => {
 
 // Function to create a faculty account
 const createFaculty = (req, res) => {
-  const { username, password, full_name, email, phone, department } = req.body;
+  const { schoolId, username, password, full_name, email, phone, department } =
+    req.body;
 
   // Check if all required fields are provided
-  if (!username || !password || !full_name || !email || !phone || !department) {
+  if (
+    !schoolId ||
+    !username ||
+    !password ||
+    !full_name ||
+    !email ||
+    !phone ||
+    !department
+  ) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
@@ -92,12 +101,20 @@ const createFaculty = (req, res) => {
 
             // Prepare the query to insert the new faculty member
             const query = `
-          INSERT INTO faculty (username, password, full_name, email, phone, department, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, NOW())`;
+          INSERT INTO faculty (school_id, username, password, full_name, email, phone, department, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
 
             db.query(
               query,
-              [username, hashedPassword, full_name, email, phone, department],
+              [
+                schoolId,
+                username,
+                hashedPassword,
+                full_name,
+                email,
+                phone,
+                department,
+              ],
               (err, result) => {
                 if (err) return res.status(500).json({ error: err.message });
 
@@ -106,6 +123,7 @@ const createFaculty = (req, res) => {
                   message: "Faculty account created successfully",
                   faculty: {
                     id: result.insertId,
+                    schoolId,
                     username,
                     full_name,
                     email,
@@ -261,6 +279,7 @@ const updateLeaveStatus = (req, res) => {
 // Function to create a student account
 const createStudent = (req, res) => {
   const {
+    schoolId,
     username,
     password,
     full_name,
@@ -287,13 +306,21 @@ const createStudent = (req, res) => {
         if (err) return res.status(500).json({ error: "Encryption error" });
 
         const query = `
-          INSERT INTO students (username, password, full_name, email, phone, class)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO students (school_id, username, password, full_name, email, phone, class)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
         db.query(
           query,
-          [username, hashedPassword, full_name, email, phone, studentClass],
+          [
+            schoolId,
+            username,
+            hashedPassword,
+            full_name,
+            email,
+            phone,
+            studentClass,
+          ],
           (err, result) => {
             if (err) return res.status(500).json({ error: "Insertion error" });
 
@@ -301,6 +328,7 @@ const createStudent = (req, res) => {
               message: "Student account created successfully",
               student: {
                 id: result.insertId,
+                schoolId,
                 username,
                 full_name,
                 email,
@@ -409,28 +437,78 @@ const deleteStudent = (req, res) => {
 
 // Function to create a parent account
 const createParent = (req, res) => {
-  console.log("Request Body:", req.body); // Add this to inspect the incoming data
+  const { school_id, username, password, full_name, email, phone, student_id } =
+    req.body;
 
-  const { username, password, full_name, email, phone, student_id } = req.body;
-
-  if (!username || !password || !full_name || !email || !phone || !student_id) {
+  if (
+    !school_id ||
+    !username ||
+    !password ||
+    !full_name ||
+    !email ||
+    !phone ||
+    !student_id
+  ) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  const query = `
-          INSERT INTO parents (username, password, full_name, email, phone, student_id)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `;
+  const checkStudentQuery =
+    "SELECT * FROM students WHERE id= ? AND school_id = ?";
 
   db.query(
-    query,
-    [username, password, full_name, email, phone, student_id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
+    checkStudentQuery,
+    [student_id, school_id],
+    (error, studentResult) => {
+      if (error) {
+        console.log("Database error", error);
+        return res.status(500).json({ error: "Database error" });
+      }
+      if (studentResult.length === 0) {
+        return res
+          .status(404)
+          .json({ error: "Student not found in the specified school" });
+      }
 
-      res.status(201).json({
-        message: "Parent account created successfully",
-        result,
+      // Check if parent exist with same student id
+      const checkParentQuery = "Select * FROM parents where student_id = ?";
+      db.query(checkParentQuery, [student_id], (error, parentResult) => {
+        if (error) {
+          console.error("Database error", error);
+          return res.status(500).json({ error: "Database error" });
+        }
+
+        if (parentResult === 0) {
+          return res
+            .status(404)
+            .json({ error: "Parent with this student id already exist" });
+        }
+
+        const insertParentQuery = `INSERT INTO parents(school_id, username, password, full_name, email, phone, student_id)
+        VALUES (?,?,?,?,?, ?, ?)
+      `;
+
+        const user = [
+          school_id,
+          username,
+          password,
+          full_name,
+          email,
+          phone,
+          student_id,
+        ];
+        db.query(insertParentQuery, user, (error, result) => {
+          if (error) {
+            console.error("Database error", error);
+            return res
+              .status(500)
+              .json({ error: "Failed to to create parent account" });
+          }
+
+          res.status(201).json({
+            message: "Parent account created successfully",
+            result,
+          });
+        });
       });
     }
   );
@@ -1072,6 +1150,24 @@ const getStudents = async (req, res) => {
   }
 };
 
+const getSchoolId = (req, res) => {
+  const adminId = req.user.id;
+
+  const query = "SELECT school_id FROM admin WHERE id = ?";
+
+  db.query(query, [adminId], (error, result) => {
+    if (error) {
+      console.error("Database Error:", error);
+      return res.status(500).json({ error: "Failed to fetch school id" });
+    } else if (result.length === 0) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    // Correctly send the response as a JSON object
+    res.status(200).json({ schoolId: result[0].school_id });
+  });
+};
+
 // Export controller functions
 module.exports = {
   login,
@@ -1121,4 +1217,6 @@ module.exports = {
   getStudents,
   getClasses,
   getStudents,
+
+  getSchoolId,
 };

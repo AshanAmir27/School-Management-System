@@ -10,12 +10,16 @@ function AdminLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Login again as an admin");
+    }
     try {
       const response = await fetch("http://localhost:5000/api/admin/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ username, password }),
       });

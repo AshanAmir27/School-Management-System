@@ -122,12 +122,15 @@ function ViewParents() {
       {parents.length === 0 && !error ? (
         <p className="text-gray-500">No parent data available.</p>
       ) : (
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-5xl">
           <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
             <thead>
               <tr className="bg-gray-200">
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
                   #
+                </th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
+                  Student Id
                 </th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
                   Username
@@ -141,9 +144,7 @@ function ViewParents() {
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
                   Phone
                 </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
-                  Student Id
-                </th>
+
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
                   Actions
                 </th>
@@ -154,6 +155,9 @@ function ViewParents() {
                 <tr key={parent.id} className="border-b hover:bg-gray-100">
                   <td className="px-6 py-3 text-sm text-gray-700">
                     {index + 1}
+                  </td>
+                  <td className="px-12 py-3 text-sm text-gray-700">
+                    {parent.student_id}
                   </td>
                   <td className="px-6 py-3 text-sm text-gray-700">
                     {parent.username}
@@ -167,9 +171,7 @@ function ViewParents() {
                   <td className="px-6 py-3 text-sm text-gray-700">
                     {parent.phone}
                   </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {parent.student_id}
-                  </td>
+
                   <td className="px-6 py-3 text-sm text-gray-700 flex gap-2">
                     <button
                       onClick={() => handleEdit(parent)}
