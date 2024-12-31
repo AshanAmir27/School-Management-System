@@ -8,6 +8,7 @@ function ViewStudents() {
 
   // Fetch student data
   useEffect(() => {
+    console.log("Fetching students...");
     const fetchStudents = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -15,7 +16,6 @@ function ViewStudents() {
         return;
       }
 
-      console.log(token);
       try {
         const response = await fetch(
           "http://localhost:5000/api/admin/viewStudents",

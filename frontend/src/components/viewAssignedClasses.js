@@ -65,9 +65,6 @@ function ViewAssignedClasses() {
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
                   Room No.
                 </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">
-                  Year
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -85,9 +82,6 @@ function ViewAssignedClasses() {
                   </td>
                   <td className="px-6 py-3 text-sm text-gray-700">
                     {cls.room_no}
-                  </td>
-                  <td className="px-6 py-3 text-sm text-gray-700">
-                    {cls.year}
                   </td>
                 </tr>
               ))}

@@ -4,13 +4,14 @@ const adminController = require("../controllers/adminController");
 const { verifyToken } = require("../middleware/auth");
 
 // Admin login route
-router.post("/login", verifyToken, adminController.login);
+router.post("/login", adminController.login);
 
 // Faculty management routes
 router.post("/createFaculty", verifyToken, adminController.createFaculty);
 router.get("/viewFaculty", verifyToken, adminController.getFaculty);
 router.put("/faculty/:id", verifyToken, adminController.editFaculty);
 router.delete("/faculty/:id", verifyToken, adminController.deleteFaculty);
+router.get("/subject/:id", verifyToken, adminController.getSubjects);
 
 router.get("/getSchoolId", verifyToken, adminController.getSchoolId);
 

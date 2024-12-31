@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 // Controller function to authenticate admin login
 const login = (req, res) => {
   const { username, password } = req.body;
-
+  console.log(username, password);
   if (!username || !password) {
     return res
       .status(400)
@@ -40,6 +40,7 @@ const login = (req, res) => {
             id: results[0].id,
             username: results[0].username,
             role: "admin",
+            school_id: results[0].school_id,
           },
           process.env.JWT_SECRET,
           { expiresIn: "1h" }
@@ -209,16 +210,27 @@ const editFaculty = (req, res) => {
 
 const getFaculty = async (req, res) => {
   try {
-    // Use query instead of execute
-    db.query("SELECT * FROM faculty", (err, results) => {
-      if (err) {
-        console.error("Error fetching faculty:", err.message);
-        return res
-          .status(500)
-          .json({ success: false, message: "Error fetching faculty" });
+    const { school_id } = req.user; // Extract school id from token payload
+
+    if (!school_id) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Unauthorized access" });
+    }
+
+    db.query(
+      "SELECT * FROM faculty where school_id = ?",
+      [school_id],
+      (err, results) => {
+        if (err) {
+          console.error("Error fetching faculty:", err.message);
+          return res
+            .status(500)
+            .json({ success: false, message: "Error fetching faculty" });
+        }
+        res.status(200).json({ success: true, data: results });
       }
-      res.status(200).json({ success: true, data: results });
-    });
+    );
   } catch (error) {
     console.error("Unexpected error:", error.message);
     res
@@ -344,17 +356,32 @@ const createStudent = (req, res) => {
 };
 
 const getStudent = (req, res) => {
-  // const query = `Select * from students`;
+  try {
+    const { school_id } = req.user;
 
-  const query =
-    "SELECT id, username, password, full_name, email, phone, class AS studentClass FROM students";
-
-  db.query(query, (error, result) => {
-    if (error) {
-      return res.status(500).json({ error: error });
+    if (!school_id) {
+      return res.status(403).json({ error: "Unauthorized access" });
     }
-    return res.status(200).json({ student: result });
-  });
+
+    db.query(
+      "SELECT * FROM students WHERE school_id = ?",
+      [school_id],
+      (error, result) => {
+        if (error) {
+          console.error("Error fetching students", error.message);
+          return res.status(500).json({ success: false, error: error.message });
+        }
+        res.status(200).json({
+          success: true,
+          message: "Student data fetched successfully",
+          students: result,
+        });
+      }
+    );
+  } catch (error) {
+    console.error("Unexpected error", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
 // Function to edit a student account
@@ -514,18 +541,31 @@ const createParent = (req, res) => {
   );
 };
 
-const getParents = (_, res) => {
-  const query = `Select * from parents`;
-
-  db.query(query, (error, result) => {
-    if (error) {
-      return res.status(500).json({ error: error.message });
+const getParents = (req, res) => {
+  try {
+    const { school_id } = req.user;
+    if (!school_id) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Unauthorized access" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Parent data fetched successfully", parents: result });
-  });
+    const query = `Select * from parents where school_id = ?`;
+
+    db.query(query, [school_id], (error, result) => {
+      if (error) {
+        console.error("Error fetching parents", error.message);
+        return res.status(500).json({ success: false, error: error.message });
+      }
+
+      res
+        .status(200)
+        .json({ message: "Parent data fetched successfully", parents: result });
+    });
+  } catch (error) {
+    console.error("Unexpected error", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 };
 
 // Function to edit a parent account
@@ -1043,19 +1083,26 @@ const addFeePayment = (req, res) => {
   );
 };
 
-// function to assign classes to faculty
 const assignClassToFaculty = (req, res) => {
-  const { teacher_id, class_name, subject, time, room_no, year } = req.body;
+  const { school_id } = req.user; // Extract from token
+  const { teacher_id, class_name, subject, time, room_no } = req.body;
 
   // Validate the input fields
-  if (!teacher_id || !class_name || !subject || !time || !room_no || !year) {
+  if (
+    !school_id ||
+    !teacher_id ||
+    !class_name ||
+    !subject ||
+    !time ||
+    !room_no
+  ) {
     return res.status(400).json({
       error:
-        "Teacher ID, class name, subject, time, room number, and year are required.",
+        "All fields (school_id, teacher_id, class_name, subject, time, room_no) are required.",
     });
   }
 
-  // Check if the teacher exists in the database
+  // Check if the teacher exists
   db.query(
     "SELECT * FROM faculty WHERE id = ?",
     [teacher_id],
@@ -1069,26 +1116,67 @@ const assignClassToFaculty = (req, res) => {
         return res.status(404).json({ error: "Teacher not found." });
       }
 
-      // Insert the class assignment into the database
-      const query = `
-        INSERT INTO class_assignments (teacher_id, class_name, subject, time, room_no, year)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-
-      db.query(
-        query,
-        [teacher_id, class_name, subject, time, room_no, year],
-        (err, result) => {
-          if (err) {
-            console.error("Error assigning class:", err);
-            return res.status(500).json({ error: "Failed to assign class." });
-          }
-
-          res.status(201).json({ message: "Class assigned successfully!" });
+      const checkTimeQuery = `SELECT * FROM class_assignments WHERE teacher_id = ? AND time = ?`;
+      db.query(checkTimeQuery, [teacher_id, time], (err, results) => {
+        if (err) {
+          console.error("Error checking teacher schedule:", err);
+          return res.status(500).json({ error: "Database error occurred." });
         }
-      );
+
+        if (results.length > 0) {
+          console.error(
+            "Teacher with this id already has a class assigned at this time."
+          );
+          return res.status(400).json({
+            error:
+              "Teacher with this id already has a class assigned at this time.",
+          });
+        }
+
+        // Insert the class assignment
+        const query = `
+      INSERT INTO class_assignments (school_id, teacher_id, class_name, subject, time, room_no)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+        db.query(
+          query,
+          [school_id, teacher_id, class_name, subject, time, room_no],
+          (err, result) => {
+            if (err) {
+              console.error("Error assigning class:", err);
+              return res.status(500).json({ error: "Failed to assign class." });
+            }
+
+            res.status(201).json({ message: "Class assigned successfully!" });
+          }
+        );
+      });
     }
   );
+};
+
+const getSubjects = (req, res) => {
+  const facultyId = req.params.id;
+  console.log("Received Faculty ID:", facultyId); // Debugging log
+  if (!facultyId) {
+    return res.status(400).json({ error: "Faculty ID is required" });
+  }
+
+  const query = "SELECT department FROM faculty WHERE id = ?";
+  db.query(query, [facultyId], (error, results) => {
+    if (error) {
+      console.error("Database Error:", error); // Log error for debugging
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Faculty ID not found" });
+    }
+
+    const department = results[0].department; // Get the department
+    console.log("Fetched Department:", department); // Debugging log
+    return res.status(200).json({ department });
+  });
 };
 
 const getAssignedClasses = (_, res) => {
@@ -1178,6 +1266,7 @@ module.exports = {
   deleteFaculty,
   assignClassToFaculty,
   getAssignedClasses,
+  getSubjects,
 
   createStudent,
   getStudent,

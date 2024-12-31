@@ -40,7 +40,7 @@ function ViewFine() {
   // Initial fetch of fines when component mounts
   useEffect(() => {
     fetchFines();
-  }, [token]);
+  });
 
   const handleShowForm = (fineId) => {
     setSelectedFineId(fineId);

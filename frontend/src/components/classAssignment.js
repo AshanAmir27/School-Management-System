@@ -6,7 +6,8 @@ function ClassAssignment() {
   const [subject, setSubject] = useState("");
   const [time, setTime] = useState("");
   const [room_no, setRoom_no] = useState("");
-  const [year, setYear] = useState("");
+
+  const [subjectList, setSubjectList] = useState([]); // Define subjectList state
 
   const [message, setMessage] = useState("");
 
@@ -14,7 +15,7 @@ function ClassAssignment() {
     e.preventDefault();
 
     // Simple form validation
-    if (!teacher_id || !class_name || !subject || !time || !room_no || !year) {
+    if (!teacher_id || !class_name || !subject || !time || !room_no) {
       setMessage("All fields are required!");
       return;
     }
@@ -40,7 +41,6 @@ function ClassAssignment() {
             subject,
             time,
             room_no,
-            year,
           }),
         }
       );
@@ -55,6 +55,38 @@ function ClassAssignment() {
     } catch (error) {
       console.log("Error", error);
       setMessage("Failed to assign class.");
+    }
+  };
+
+  const fetchSubjects = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("Unauthorized access. Please login.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/admin/subject/${teacher_id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setSubjectList([data.department]); // Add department to subjectList
+      } else {
+        const errorData = await response.json();
+        setMessage(errorData.error || "Failed to fetch department");
+      }
+    } catch (error) {
+      console.error("Error fetching department:", error);
+      setMessage("Failed to fetch department");
     }
   };
 
@@ -87,7 +119,15 @@ function ClassAssignment() {
               type="text"
               id="teacher_id"
               value={teacher_id}
-              onChange={(e) => setTeacher_id(e.target.value)}
+              onChange={(e) => {
+                setTeacher_id(e.target.value);
+                setSubjectList([]); // Reset subject list when changing teacher ID
+              }}
+              onBlur={() => {
+                if (teacher_id) {
+                  fetchSubjects(); // Fetch subjects when teacher ID is entered
+                }
+              }}
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
             />
           </div>
@@ -97,7 +137,7 @@ function ClassAssignment() {
               htmlFor="class_name"
               className="block text-gray-700 font-medium mb-2"
             >
-              Assigned Class
+              Class
             </label>
             <input
               type="text"
@@ -115,13 +155,19 @@ function ClassAssignment() {
             >
               Subject
             </label>
-            <input
-              type="text"
+            <select
               id="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
-            />
+            >
+              <option value="">Select Subject</option>
+              {subjectList.map((dept, index) => (
+                <option key={index} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -152,22 +198,6 @@ function ClassAssignment() {
               id="room_no"
               value={room_no}
               onChange={(e) => setRoom_no(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="year"
-              className="block text-gray-700 font-medium mb-2"
-            >
-              Year
-            </label>
-            <input
-              type="text"
-              id="year"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
               className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
             />
           </div>
