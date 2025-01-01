@@ -51,6 +51,9 @@ function FeeStructure() {
       const endpoint = form.id
         ? `http://localhost:5000/api/admin/fees/${form.id}`
         : "http://localhost:5000/api/admin/fees";
+      console.log("Form Id ", form.id);
+      console.log("Endpoint:", endpoint);
+      console.log("Method:", method);
       const response = await fetch(endpoint, {
         method,
         headers: {

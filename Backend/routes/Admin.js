@@ -80,7 +80,11 @@ router.delete(
 );
 
 // Add a fine
-router.post("/student/:id/fine", adminController.addFineToStudent);
+router.post(
+  "/:student_id/addFine",
+  verifyToken,
+  adminController.addFineToStudent
+);
 router.get("/getFineDetail", verifyToken, adminController.getFineDetail);
 // Update a fine
 router.put(

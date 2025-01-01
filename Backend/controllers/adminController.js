@@ -654,34 +654,42 @@ const deleteParent = (req, res) => {
 
 // function to create a fee structure
 const createFeeStructure = (req, res) => {
+  const { school_id } = req.user;
+
   const { class: class_name, amount, academic_year } = req.body;
 
-  if (!class_name || !amount || !academic_year) {
+  if (!school_id || !class_name || !amount || !academic_year) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
   const query = `
-    INSERT INTO fee_structures (class, amount, academic_year)
-    VALUES (?, ?, ?)
+    INSERT INTO fee_structures (school_id,class, amount, academic_year)
+    VALUES (?, ?, ?, ?)
   `;
 
-  db.query(query, [class_name, amount, academic_year], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
+  db.query(
+    query,
+    [school_id, class_name, amount, academic_year],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
 
-    res.status(201).json({
-      message: "Fee structure created successfully",
-      feeStructure: {
-        id: result.insertId,
-        class_name,
-        amount,
-        academic_year,
-      },
-    });
-  });
+      res.status(201).json({
+        message: "Fee structure created successfully",
+        feeStructure: {
+          id: result.insertId,
+          school_id,
+          class_name,
+          amount,
+          academic_year,
+        },
+      });
+    }
+  );
 };
 
 // function to update a fee structure
 const updateFeeStructure = (req, res) => {
+  const { school_id } = req.user;
   const { id } = req.params;
   const { class: class_name, amount, academic_year } = req.body;
 
@@ -689,26 +697,26 @@ const updateFeeStructure = (req, res) => {
     return res.status(400).json({ error: "Fee structure ID is required" });
   }
 
-  console.log("Received data:", req.body); // Log the incoming request body
-
   // Logging the query and params
   const query =
-    "UPDATE fee_structures SET class = ?, amount = ?, academic_year = ? WHERE id = ?";
-  console.log("Query:", query);
-  console.log("Params:", [class_name, amount, academic_year, id]);
+    "UPDATE fee_structures SET class = ?, amount = ?, academic_year = ? WHERE id = ? AND school_id = ?";
 
-  db.query(query, [class_name, amount, academic_year, id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
+  db.query(
+    query,
+    [class_name, amount, academic_year, id, school_id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
 
-    // Log the result of the query execution to check the affected rows
-    console.log("Result:", result);
+      // Log the result of the query execution to check the affected rows
+      console.log("Result:", result);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Fee structure not found" });
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Fee structure not found" });
+      }
+
+      res.status(200).json({ message: "Fee structure updated successfully" });
     }
-
-    res.status(200).json({ message: "Fee structure updated successfully" });
-  });
+  );
 };
 
 // function to get all fee structures
@@ -760,21 +768,22 @@ const deleteFeeStructure = (req, res) => {
 
 // Create a new announcement
 const createAnnouncement = (req, res) => {
+  const { school_id } = req.user;
   const { title, message } = req.body;
 
   if (!title || !message) {
     return res.status(400).json({ error: "Title and message are required." });
   }
 
-  const query = "INSERT INTO announcements (title, message) VALUES (?, ?)";
-  db.query(query, [title, message], (err, result) => {
+  const query =
+    "INSERT INTO announcements (school_id, title, message) VALUES (?, ?, ?)";
+  db.query(query, [school_id, title, message], (err, result) => {
     if (err) {
       console.error("Error creating announcement:", err);
       return res.status(500).json({ error: "Failed to create announcement." });
     }
     res.status(201).json({
       message: "Announcement created successfully!",
-      id: result.insertId,
     });
   });
 };
@@ -851,23 +860,49 @@ const deleteAnnouncement = (req, res) => {
 
 // function to add fine to student
 const addFineToStudent = (req, res) => {
-  const { id } = req.params; // student ID from URL parameter
+  const { school_id } = req.user; // School ID from the authenticated admin
+  const { student_id } = req.params; // Student ID from URL parameter
   const { amount, reason } = req.body; // Fine amount and reason from request body
 
-  if (!amount || !reason) {
-    return res.status(400).json({ error: "Amount and reason are required." });
+  // Validate input
+  if (!student_id || !school_id || !amount || !reason) {
+    return res.status(400).json({ error: "All fields are required." });
   }
 
-  const query =
-    "INSERT INTO fines (student_id, amount, reason) VALUES (?, ?, ?)";
-  db.query(query, [id, amount, reason], (err, result) => {
+  // Step 1: Check if the student belongs to the admin's school
+  const checkStudentQuery =
+    "SELECT school_id FROM students WHERE id = ? AND school_id = ?";
+  db.query(checkStudentQuery, [student_id, school_id], (err, results) => {
     if (err) {
-      console.error("Error adding fine:", err);
-      return res.status(500).json({ error: "Failed to add fine." });
+      console.error("Error checking student:", err);
+      return res.status(500).json({ error: "Failed to verify student." });
     }
-    res
-      .status(201)
-      .json({ message: "Fine added successfully!", fine_id: result.insertId });
+
+    if (results.length === 0) {
+      // Student does not belong to the admin's school
+      return res.status(403).json({
+        error: "You are not authorized to add a fine to this student.",
+      });
+    }
+
+    // Step 2: Add the fine to the database
+    const addFineQuery =
+      "INSERT INTO fines (school_id, student_id, amount, reason) VALUES (?, ?, ?, ?)";
+    db.query(
+      addFineQuery,
+      [school_id, student_id, amount, reason],
+      (err, result) => {
+        if (err) {
+          console.error("Error adding fine:", err);
+          return res.status(500).json({ error: "Failed to add fine." });
+        }
+
+        res.status(201).json({
+          message: "Fine added successfully!",
+          fine_id: result.insertId,
+        });
+      }
+    );
   });
 };
 
@@ -935,13 +970,17 @@ const getStudentFines = (req, res) => {
 };
 
 const getFineDetail = (req, res) => {
-  const query = "Select * from fines";
+  const { school_id } = req.user; // School ID from the authenticated admin
 
-  db.query(query, (error, result) => {
+  // Modify the query to filter fines by the school_id
+  const query = "SELECT * FROM fines WHERE school_id = ?";
+
+  db.query(query, school_id, (error, result) => {
     if (error) {
-      return res.status(400).json({ error: error });
+      console.error("Error fetching fines:", error);
+      return res.status(400).json({ error: "Failed to fetch fine details." });
     } else {
-      return res.status(200).json({ fine: result });
+      return res.status(200).json({ fines: result });
     }
   });
 };

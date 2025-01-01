@@ -31,7 +31,7 @@ function ViewFine() {
       }
 
       const data = await response.json();
-      setFines(data.fine);
+      setFines(data.fines || []);
     } catch (err) {
       console.error("Error fetching fines:", err);
     }
@@ -125,29 +125,37 @@ function ViewFine() {
           </tr>
         </thead>
         <tbody>
-          {fines.map((fine) => (
-            <tr key={fine.id}>
-              <td className="text-center">{fine.id}</td>
-              <td className="text-center">{fine.student_id}</td>
-              <td className="text-center">{fine.amount}</td>
-              <td className="text-center">{fine.reason}</td>
-              <td className="text-center">{fine.status}</td>
-              <td className="text-center">
-                <button
-                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                  onClick={() => handleShowForm(fine.student_id)} // Updated function name
-                >
-                  Paid
-                </button>
-                <button
-                  className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                  onClick={() => handleDelete(fine.student_id, fine.id)}
-                >
-                  Delete
-                </button>
+          {fines && fines.length > 0 ? (
+            fines.map((fine) => (
+              <tr key={fine.id}>
+                <td className="text-center">{fine.id}</td>
+                <td className="text-center">{fine.student_id}</td>
+                <td className="text-center">{fine.amount}</td>
+                <td className="text-center">{fine.reason}</td>
+                <td className="text-center">{fine.status}</td>
+                <td className="text-center">
+                  <button
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    onClick={() => handleShowForm(fine.student_id)}
+                  >
+                    Paid
+                  </button>
+                  <button
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    onClick={() => handleDelete(fine.student_id, fine.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="6" className="text-center">
+                No fines available.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
 

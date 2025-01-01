@@ -4,7 +4,7 @@ function Fine() {
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
-  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [student_id, setStudentId] = useState("");
   const [selectedStudentName, setSelectedStudentName] = useState(""); // State for student name
   const [fineAmount, setFineAmount] = useState("");
   const [fineReason, setFineReason] = useState("");
@@ -45,7 +45,7 @@ function Fine() {
   // Handle class selection
   const handleClassChange = (e) => {
     setSelectedClass(e.target.value);
-    setSelectedStudentId("");
+    setStudentId("");
     setSelectedStudentName("");
     fetchStudents(e.target.value);
   };
@@ -53,7 +53,8 @@ function Fine() {
   // Handle student ID selection
   const handleStudentIdChange = (e) => {
     const studentId = e.target.value;
-    setSelectedStudentId(studentId);
+    setStudentId(studentId); // Update the state
+    console.log("Selected Student ID", studentId); // Log the correct value directly
 
     // Find the student's name from the list of students
     const selectedStudent = students.find(
@@ -70,18 +71,30 @@ function Fine() {
   const handleFineSubmit = async (e) => {
     e.preventDefault();
 
-    if (!fineAmount || !fineReason || !selectedStudentId) {
+    // Ensure studentId, fineAmount, and fineReason are not empty
+    console.log("Selected Student ID:", student_id);
+    console.log("Fine Amount:", fineAmount);
+    console.log("Fine Reason:", fineReason);
+
+    if (!fineAmount || !fineReason || !student_id) {
       setError("Please fill in all fields.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("You need to be logged in to assign fine.");
       return;
     }
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/admin/student/${selectedStudentId}/fine`,
+        `http://localhost:5000/api/admin/${student_id}/addFine`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             amount: fineAmount,
@@ -89,12 +102,12 @@ function Fine() {
           }),
         }
       );
-
+      console.log("student id in request", student_id);
       const data = await response.json();
       if (response.ok) {
         setFineAmount("");
         setFineReason("");
-        setSelectedStudentId("");
+        setStudentId("");
         setSelectedStudentName("");
         setError(null);
         alert("Fine assigned successfully");
@@ -148,7 +161,7 @@ function Fine() {
           </label>
           <select
             id="student_id"
-            value={selectedStudentId}
+            value={student_id}
             onChange={handleStudentIdChange}
             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-blue-300"
           >
