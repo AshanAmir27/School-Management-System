@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 function AddGrade() {
+  const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
   const [formData, setFormData] = useState({
     student_id: "",
     classId: "",
@@ -14,8 +16,58 @@ function AddGrade() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const token = localStorage.getItem("token");
 
-  // Handle input change
+  // Handle unauthorized access
+  useEffect(() => {
+    if (!token) {
+      alert("Unauthorized Access, Please Login again!");
+    }
+  }, [token]);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (!token) return; // Prevent the API call if the token is missing
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/faculty/getClasses",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setClasses(response.data.classes);
+      } catch (err) {
+        console.error("Error fetching classes:", err.message);
+      }
+    };
+    fetchClasses();
+  }, [token]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (!token || !formData.classId) return; // Skip if no token or classId
+
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/api/faculty/getStudents/${formData.classId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setStudents(response.data.students);
+      } catch (err) {
+        console.error("Error fetching students:", err.message);
+        setStudents([]);
+      }
+    };
+
+    fetchStudents();
+  }, [formData.classId, token]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -24,26 +76,27 @@ function AddGrade() {
     });
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Clear previous messages
     setMessage("");
     setError("");
 
+    if (!token) {
+      alert("Unauthorized Access, Please Login again!");
+      return;
+    }
+
     try {
-      const facultyId = 1; // Replace with dynamic value if needed
       const response = await axios.post(
-        `http://localhost:5000/api/faculty/${facultyId}/grades`,
+        "http://localhost:5000/api/faculty/grades",
         formData,
         {
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
-
       setMessage(response.data.message || "Grade added successfully!");
       setFormData({
         student_id: "",
@@ -74,30 +127,41 @@ function AddGrade() {
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Student ID
-            </label>
-            <input
-              type="number"
-              name="student_id"
-              value={formData.student_id}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Class ID
             </label>
-            <input
-              type="number"
+            <select
               name="classId"
               value={formData.classId}
               onChange={handleChange}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">Select Class</option>
+              {classes.map((classItem, index) => (
+                <option key={index} value={classItem}>
+                  {classItem}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Student ID
+            </label>
+            <select
+              name="student_id"
+              value={formData.student_id}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Student</option>
+              {students.map((student, index) => (
+                <option key={index} value={student.student_id}>
+                  {student.full_name} {student.id}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="mb-4">
@@ -113,7 +177,6 @@ function AddGrade() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Obtained Marks
@@ -128,7 +191,6 @@ function AddGrade() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Total Marks
@@ -143,7 +205,6 @@ function AddGrade() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Grade
@@ -163,7 +224,6 @@ function AddGrade() {
               <option value="F">F</option>
             </select>
           </div>
-
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Remarks
@@ -176,7 +236,6 @@ function AddGrade() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const studentController = require("../controllers/studentController");
+const { verifyToken } = require("../middleware/auth");
 
 // student login route
 router.post("/login", studentController.login);
@@ -9,13 +10,13 @@ router.post("/login", studentController.login);
 router.post("/reset", studentController.resetPassword);
 
 // Route to view attendance for a specific student
-router.get("/:student_id/attendance", studentController.viewAttendance);
+router.get("/attendance", verifyToken, studentController.viewAttendance);
 
 //Route to view assignments
-router.get("/assignments", studentController.viewAssignments);
+router.get("/assignments", verifyToken, studentController.viewAssignments);
 
 // Route to view grades for a specific student
-router.get("/:student_id/grades", studentController.viewGrades);
+router.get("/grades", verifyToken, studentController.viewGrades);
 
 // Route to fetch fee payment status
 router.get("/:id/fee-status", studentController.getFeeStatus);
@@ -26,7 +27,11 @@ router.get(
 );
 
 // Route for student to submit a leave request
-router.post("/leave-request", studentController.submitLeaveRequest);
+router.post(
+  "/leave-request",
+  verifyToken,
+  studentController.submitLeaveRequest
+);
 
 // Route to get all announcements
 router.get("/announcements", studentController.getAnnouncements);

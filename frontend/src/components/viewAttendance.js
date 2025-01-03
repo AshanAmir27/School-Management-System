@@ -10,14 +10,26 @@ function StuAttendance() {
   // Fetch classes on component load
   useEffect(() => {
     const fetchClasses = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Please login to view this page.");
+        return;
+      }
       try {
         const response = await fetch(
-          "http://localhost:5000/api/faculty/getClasses"
+          "http://localhost:5000/api/faculty/getClasses",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (!response.ok) throw new Error("Error fetching classes");
 
         const data = await response.json();
+
         setClasses(data.classes || []);
+
         setError("");
       } catch (err) {
         console.error(err.message);
@@ -30,14 +42,23 @@ function StuAttendance() {
 
   // Fetch students based on selected class ID
   const fetchStudentsByClass = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("unauthorized");
+    }
     try {
       if (!classId) {
         setError("Please select a class.");
         return;
       }
-
+      console.log("Class id from frontend", classId);
       const response = await fetch(
-        `http://localhost:5000/api/faculty/getStudents?classId=${classId}`
+        `http://localhost:5000/api/faculty/getStudents/${classId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (!response.ok) {
@@ -94,13 +115,17 @@ function StuAttendance() {
         student_id: attendance.student_id,
         status: attendance.status, // Just send status ('present' or 'absent')
       }));
-
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Please login to view this page.");
+      }
       const response = await fetch(
         "http://localhost:5000/api/faculty/markAttendance",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             classId: classId,

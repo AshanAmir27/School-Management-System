@@ -13,9 +13,8 @@ function FacultyAssignedClasses() {
       }
 
       try {
-        const facultyId = 3; // Replace with the actual faculty ID, or make it dynamic
         const response = await fetch(
-          `http://localhost:5000/api/faculty/${facultyId}/classes`,
+          `http://localhost:5000/api/faculty/classes`,
           {
             method: "GET",
             headers: {
@@ -74,9 +73,6 @@ function FacultyAssignedClasses() {
                 <th className="px-6 py-4 text-sm font-medium text-gray-600 text-left">
                   Room Number
                 </th>
-                <th className="px-6 py-4 text-sm font-medium text-gray-600 text-left">
-                  Year
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -93,9 +89,6 @@ function FacultyAssignedClasses() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
                     {classItem.room_no}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    {classItem.year}
                   </td>
                 </tr>
               ))}

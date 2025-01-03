@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
 function StudentSubmitLeave() {
-  const [student_id, setStudentId] = useState(""); // Assuming faculty_id is provided or can be fetched dynamically
   const [leave_start_date, setLeave_start_date] = useState("");
   const [leave_end_date, setLeave_end_date] = useState("");
   const [leave_reason, setLeave_reason] = useState("");
@@ -23,12 +22,15 @@ function StudentSubmitLeave() {
 
     // Prepare request data
     const leaveData = {
-      student_id: student_id, // Replace with actual faculty ID if dynamically fetched
       leave_start_date: leave_start_date,
       leave_end_date: leave_end_date,
       leave_reason: leave_reason,
     };
-
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("User is not logged in.");
+      return;
+    }
     try {
       const response = await fetch(
         "http://localhost:5000/api/student/leave-request",
@@ -36,6 +38,7 @@ function StudentSubmitLeave() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(leaveData),
         }
@@ -76,23 +79,6 @@ function StudentSubmitLeave() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="student_id"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Student ID
-            </label>
-            <input
-              type="text"
-              id="student_id"
-              value={student_id}
-              onChange={(e) => setStudentId(e.target.value)}
-              className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              required
-            />
-          </div>
-
           <div>
             <label
               htmlFor="leave_start_date"

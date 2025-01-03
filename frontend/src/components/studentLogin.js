@@ -27,7 +27,9 @@ function StudentLogin() {
 
       if (response.ok) {
         setMessage("Login Successful");
-        console.log("Student information", data.message);
+        // console.log("Student information", data.message);
+        localStorage.setItem("authToken", data.token); // Store the token in local storage
+
         navigate("/studentDashboard"); // Redirect to the student dashboard
       } else {
         setMessage(data.message || "Invalid credentials");

@@ -4,12 +4,21 @@ function StuAssignments() {
   const [assignments, setAssignments] = useState([]);
   const [error, setError] = useState("");
 
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Unauthorized Access , please login again");
+  }
   // Fetch assignments when the component mounts
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/student/assignments"
+          "http://localhost:5000/api/student/assignments",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch assignments");

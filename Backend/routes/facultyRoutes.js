@@ -7,7 +7,7 @@ const { verifyToken } = require("../middleware/auth");
 router.post("/login", facultyController.login);
 
 //Route to reset password
-router.post("/reset-password", facultyController.resetPassword);
+router.post("/reset-password", verifyToken, facultyController.resetPassword);
 
 //Route to get leave
 router.post("/leave-request", verifyToken, facultyController.getLeave);
@@ -15,26 +15,31 @@ router.post("/leave-request", verifyToken, facultyController.getLeave);
 router.get("/getStudentList", facultyController.getStudentList);
 
 // Add route
-router.post("/markAttendance", facultyController.markAttendance);
+router.post("/markAttendance", verifyToken, facultyController.markAttendance);
 
 // Add route
 router.get("/getAttendance", facultyController.getAttendance);
 
 // Add the route
-router.get("/getClasses", facultyController.getDistinctClasses);
+router.get("/getClasses", verifyToken, facultyController.getDistinctClasses);
 
 // Add the route
-router.get("/getStudents", facultyController.getStudentsByClass);
+router.get(
+  "/getStudents/:classId",
+  verifyToken,
+  facultyController.getStudentsByClass
+);
 
 // Route to add grades for a specific student
-router.post("/:faculty_id/grades", facultyController.addGrade);
+router.post("/grades", verifyToken, facultyController.addGrade);
 
 router.get("/getGrades", verifyToken, facultyController.viewGrade);
 
-router.get("/getLeaveRequest", facultyController.getLeaveRequest);
+router.get("/getLeaveRequest", verifyToken, facultyController.getLeaveRequest);
 
 router.put(
-  "/:student_id/updateLeaveStatus",
+  "/updateLeaveStatus",
+  verifyToken,
   facultyController.updateLeaveStatus
 );
 
@@ -45,13 +50,18 @@ router.put(
 );
 
 // Route to view assigned classes
-router.get("/:id/classes", verifyToken, facultyController.viewAssignedClasses);
+router.get("/classes", verifyToken, facultyController.viewAssignedClasses);
 
 router.post(
   "/assign-class-assignment",
+  verifyToken,
   facultyController.assignAssignmentToClass
 );
-router.get("/get-class-details", facultyController.getClassDetails);
+router.get(
+  "/get-class-details",
+  verifyToken,
+  facultyController.getClassDetails
+);
 
 // Route to view announcements
 router.get("/announcements", facultyController.viewAnnouncements);

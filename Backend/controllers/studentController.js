@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const PDFDocument = require("pdfkit");
 const db = require("../config/db");
+const jwt = require("jsonwebtoken");
 
 // Function to handle student login
 const login = (req, res) => {
@@ -19,7 +20,7 @@ const login = (req, res) => {
   db.query(query, [username], (err, results) => {
     if (err) {
       console.error(err);
-      return res.status(500).json({ message: "Database error occurred." });
+      return res.status(500).json({ error: err });
     }
 
     if (results.length === 0) {
@@ -32,16 +33,40 @@ const login = (req, res) => {
     bcrypt.compare(password, student.password, (err, isMatch) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ message: "Error comparing passwords." });
+        return res.status(500).json({ error: err.message });
       }
 
-      if (isMatch) {
-        // Passwords match, login successful
-        return res.status(200).json({ message: "Login successful", student });
-      } else {
+      if (!isMatch) {
         // Passwords do not match
         return res.status(401).json({ message: "Invalid password." });
       }
+
+      const token = jwt.sign(
+        {
+          student_id: student.id,
+          school_id: student.school_id,
+          role: "student",
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1h",
+        }
+      );
+
+      res.status(200).json({
+        message: "Login successful.",
+        token: token,
+        student: {
+          student_id: student.id,
+          school_id: student.school_id,
+          full_name: student.full_name,
+          username: student.username,
+          email: student.email,
+          phone: student.phone,
+          address: student.address,
+          class: student.class,
+        },
+      });
     });
   });
 };
@@ -98,16 +123,9 @@ const resetPassword = (req, res) => {
 
 // Function to fetch attendance for a specific student
 const viewAttendance = (req, res) => {
-  const { student_id } = req.params; // Get the student ID from the route params
+  const { student_id } = req.user;
 
-  // Query to fetch attendance for the student
-  const query = `
-    SELECT a.date, a.status, f.full_name AS faculty_name 
-    FROM attendance a
-    JOIN faculty f ON a.faculty_id = f.id
-    WHERE a.student_id = ?
-    ORDER BY a.date DESC
-  `;
+  const query = "Select * from attendance where student_id = ?";
 
   db.query(query, [student_id], (err, results) => {
     if (err) {
@@ -115,37 +133,29 @@ const viewAttendance = (req, res) => {
       return res.status(500).json({ error: "Error fetching attendance data." });
     }
 
-    // Check if there is any attendance data for the student
-    if (results.length === 0) {
-      return res.status(404).json({ message: "No attendance records found." });
+    if (!results.length) {
+      return res.status(404).json({ attendance: [] });
     }
 
-    // Respond with the attendance data
     res.status(200).json({ attendance: results });
   });
 };
+
 // Function to fetch grades for a specific student
 const viewGrades = (req, res) => {
-  const { student_id } = req.params; // Get the student ID from the route params
+  console.log("Request User", req.user);
+  const { student_id } = req.user; // Extract student_id from the decoded token
+  console.log(student_id);
+  if (!req.user || !req.user.student_id) {
+    return res.status(400).json({ error: "Student ID not found in token" });
+  }
 
-  const query = `
-    SELECT 
-      g.subject, 
-      g.grade, 
-      g.obtainedMarks, 
-      g.totalMarks, 
-      g.percentage, 
-      f.full_name AS faculty_name 
-    FROM grades g
-    JOIN faculty f ON g.faculty_id = f.id
-    WHERE g.student_id = ?
-    ORDER BY g.classId DESC, g.subject DESC
-  `;
+  const query = "SELECT * FROM grades WHERE student_id = ?";
 
   db.query(query, [student_id], (err, results) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Error fetching grade data." });
+      console.error("Error fetching grade data:", err.message);
+      return res.status(500).json({ error: "Database query failed." });
     }
 
     if (results.length === 0) {
@@ -202,11 +212,19 @@ const getFeeStatus = (req, res) => {
 
 // Function to submit a leave request for a student
 const submitLeaveRequest = (req, res) => {
-  const { student_id, leave_start_date, leave_end_date, leave_reason } =
-    req.body;
-
+  const { school_id, id: student_id } = req.user; // Get the student ID from the token payload
+  const { leave_start_date, leave_end_date, leave_reason } = req.body;
+  console.log("Request Body", req.user);
+  // console.log("School Id", school_id);
+  // console.log("Student id", student_id);
   // Validate input
-  if (!student_id || !leave_start_date || !leave_end_date || !leave_reason) {
+  if (
+    !school_id ||
+    !student_id ||
+    !leave_start_date ||
+    !leave_end_date ||
+    !leave_reason
+  ) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
@@ -217,7 +235,7 @@ const submitLeaveRequest = (req, res) => {
     (err, results) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ error: "Database error occurred." });
+        return res.status(500).json({ error: err });
       }
 
       if (results.length === 0) {
@@ -226,13 +244,13 @@ const submitLeaveRequest = (req, res) => {
 
       // Insert the leave request into the database
       const query = `
-      INSERT INTO std_leave_requests (student_id, leave_start_date, leave_end_date, leave_reason)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO std_leave_requests (school_id, student_id, leave_start_date, leave_end_date, leave_reason)
+      VALUES (?, ?, ?, ?, ?)
     `;
 
       db.query(
         query,
-        [student_id, leave_start_date, leave_end_date, leave_reason],
+        [school_id, student_id, leave_start_date, leave_end_date, leave_reason],
         (err, result) => {
           if (err) {
             console.error(err);

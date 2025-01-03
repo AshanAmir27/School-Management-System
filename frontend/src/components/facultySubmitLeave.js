@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 function FacultySubmitLeave() {
-  const [faculty_id, setFacultyId] = useState(""); // Assuming faculty_id is provided or can be fetched dynamically
+  // const [faculty_id, setFacultyId] = useState(""); // Assuming faculty_id is provided or can be fetched dynamically
   const [leave_start_date, setLeave_start_date] = useState("");
   const [leave_end_date, setLeave_end_date] = useState("");
   const [leave_reason, setLeave_reason] = useState("");
@@ -23,7 +23,7 @@ function FacultySubmitLeave() {
 
     // Prepare request data
     const leaveData = {
-      faculty_id: faculty_id, // Replace with actual faculty ID if dynamically fetched
+      // faculty_id: faculty_id, // Replace with actual faculty ID if dynamically fetched
       leave_start_date: leave_start_date,
       leave_end_date: leave_end_date,
       leave_reason: leave_reason,
@@ -49,7 +49,8 @@ function FacultySubmitLeave() {
       );
 
       if (response.ok) {
-        setMessage("Leave request submitted successfully.");
+        const data = await response.json(); // Expecting JSON response
+        setMessage(data.message);
         setLeave_start_date("");
         setLeave_end_date("");
         setLeave_reason("");
@@ -83,7 +84,7 @@ function FacultySubmitLeave() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
+          {/* <div>
             <label
               htmlFor="faculty_id"
               className="block text-sm font-medium text-gray-700"
@@ -98,7 +99,7 @@ function FacultySubmitLeave() {
               className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               required
             />
-          </div>
+          </div> */}
 
           <div>
             <label

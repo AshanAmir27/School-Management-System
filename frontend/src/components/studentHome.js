@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Import components for different sections
@@ -24,6 +24,14 @@ function StudentDashboard() {
   const handleLogout = () => {
     navigate("/");
   };
+
+  useEffect(() => {
+    const token = () => {
+      const fetchToken = localStorage.getItem("token");
+      console.log("Token for student ", fetchToken);
+    };
+    token();
+  });
 
   return (
     <div className="flex h-screen bg-gray-100">

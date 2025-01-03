@@ -1,8 +1,8 @@
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
-const { json } = require("express");
+// const { json } = require("express");
 const jwt = require("jsonwebtoken");
-const { generateToken } = require("../utils/jwt");
+// const { generateToken } = require("../utils/jwt");
 
 // Controller function to authenticate admin login
 const login = (req, res) => {
@@ -36,6 +36,7 @@ const login = (req, res) => {
           {
             id: results[0].id,
             username: results[0].username,
+            school_id: results[0].school_id,
           },
           process.env.JWT_SECRET,
           {
@@ -120,22 +121,28 @@ const getStudentList = (req, res) => {
 };
 
 const getDistinctClasses = (req, res) => {
-  db.query("SELECT DISTINCT class FROM students", (err, results) => {
-    if (err) {
-      console.error("Error fetching classes:", err.message);
-      return res
-        .status(500)
-        .json({ success: false, message: "Error fetching classes" });
-    }
+  const { school_id } = req.user;
 
-    const classes = results.map((row) => row.class);
-    res.status(200).json({ success: true, classes });
-  });
+  db.query(
+    "SELECT DISTINCT class FROM students where school_id = ?",
+    [school_id],
+    (err, results) => {
+      if (err) {
+        console.error("Error fetching classes:", err.message);
+        return res
+          .status(500)
+          .json({ success: false, message: "Error fetching classes" });
+      }
+
+      const classes = results.map((row) => row.class);
+      res.status(200).json({ success: true, classes });
+    }
+  );
 };
 
 const getStudentsByClass = (req, res) => {
-  const { classId } = req.query;
-
+  const { classId } = req.params; // Use req.params instead of req.query
+  console.log("Class id", classId);
   if (!classId) {
     return res
       .status(400)
@@ -158,22 +165,19 @@ const getStudentsByClass = (req, res) => {
   );
 };
 
-// function to view assigned classes
 const viewAssignedClasses = (req, res) => {
-  const { id: teacher_id } = req.params; // Assuming teacher ID is passed as a query parameter
+  const { school_id, id } = req.user;
 
-  // Validate teacher_id
-  if (!teacher_id) {
+  if (!id) {
     return res.status(400).json({ error: "Teacher ID is required." });
   }
 
-  // Query the database for assigned classes
   const query = `
-    SELECT class_name, subject, time, room_no, year 
+    SELECT class_name, subject, time, room_no
     FROM class_assignments 
-    WHERE teacher_id = ?`;
+    WHERE id = ? AND school_id = ?`;
 
-  db.query(query, [teacher_id], (err, results) => {
+  db.query(query, [id, school_id], (err, results) => {
     if (err) {
       console.error("Error fetching classes:", err);
       return res.status(500).json({ error: "Database error occurred." });
@@ -202,9 +206,8 @@ const getLeaveRequest = (req, res) => {
 };
 
 const updateLeaveStatus = (req, res) => {
-  const { status } = req.body;
-  const { student_id } = req.params;
-
+  const { student_id, status } = req.body;
+  console.log(student_id);
   const query = "Update std_leave_requests Set status = ? where student_id = ?";
 
   db.query(query, [status, student_id], (error, result) => {
@@ -217,7 +220,11 @@ const updateLeaveStatus = (req, res) => {
 
 const markAttendance = (req, res) => {
   const { classId, attendance } = req.body;
-  const facultyId = req.user ? req.user.faculty_id : 3; // Assuming faculty ID is from the logged-in user
+  const { id: faculty_id, school_id } = req.user;
+  console.log("Class Id ", classId);
+  console.log("Attendance ", attendance);
+  console.log("Faculty Id ", faculty_id);
+  console.log("School Id ", school_id);
 
   if (!classId || !Array.isArray(attendance)) {
     return res
@@ -264,7 +271,7 @@ const markAttendance = (req, res) => {
         // Check if the attendance record already exists for this student and faculty
         db.query(
           `SELECT * FROM attendance WHERE student_id = ? AND faculty_id = ?`,
-          [entry.student_id, facultyId],
+          [entry.student_id, faculty_id],
           (err, result) => {
             if (err) {
               console.error("Error checking attendance:", err.message);
@@ -277,7 +284,7 @@ const markAttendance = (req, res) => {
               // If attendance record exists, update it
               db.query(
                 `UPDATE attendance SET ${column} = ${column} + 1 WHERE student_id = ? AND faculty_id = ?`,
-                [entry.student_id, facultyId],
+                [entry.student_id, faculty_id],
                 (err, result) => {
                   if (err) {
                     console.error("Error updating attendance:", err.message);
@@ -294,10 +301,11 @@ const markAttendance = (req, res) => {
             } else {
               // If no record exists, insert it
               db.query(
-                `INSERT INTO attendance (student_id, faculty_id, present, absent) VALUES (?, ?, ?, ?)`,
+                `INSERT INTO attendance (school_id, student_id, faculty_id, present, absent) VALUES (?, ?, ?, ?, ?)`,
                 [
+                  school_id,
                   entry.student_id,
-                  facultyId,
+                  faculty_id,
                   entry.status === "present" ? 1 : 0,
                   entry.status === "absent" ? 1 : 0,
                 ],
@@ -416,27 +424,44 @@ const getAttendance = (req, res) => {
 
 // function to get leave
 const getLeave = (req, res) => {
-  const { faculty_id, leave_start_date, leave_end_date, leave_reason } =
-    req.body;
+  const { school_id, id: faculty_id } = req.user;
+  const { leave_start_date, leave_end_date, leave_reason } = req.body;
 
-  const query = `INSERT INTO leave_requests (faculty_id, leave_start_date, leave_end_date, leave_reason) 
-                   VALUES (?, ?, ?, ?)`;
+  if (!leave_start_date || !leave_end_date || !leave_reason) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  if (new Date(leave_start_date) > new Date(leave_end_date)) {
+    return res
+      .status(400)
+      .json({ error: "Leave start date cannot be after end date." });
+  }
+
+  const query = `
+    INSERT INTO leave_requests (school_id, faculty_id, leave_start_date, leave_end_date, leave_reason) 
+    VALUES (?, ?, ?, ?, ?)
+  `;
 
   db.query(
     query,
-    [faculty_id, leave_start_date, leave_end_date, leave_reason],
-    (err, result) => {
+    [school_id, faculty_id, leave_start_date, leave_end_date, leave_reason],
+    (err) => {
       if (err) {
-        return res
-          .status(500)
-          .send("Error occurred while submitting the leave request");
+        console.error("Database Error:", err);
+        return res.status(500).json({ error: "Database error occurred." });
       }
-      res.status(200).send("Leave request submitted successfully");
+      res
+        .status(200)
+        .json({ message: "Leave request submitted successfully." });
     }
   );
 };
 
 const addGrade = (req, res) => {
+  // id: results[0].id,
+  // username: results[0].username,
+  // school_id: results[0].school_id,
+
   const {
     student_id,
     subject,
@@ -445,8 +470,10 @@ const addGrade = (req, res) => {
     obtainedMarks,
     totalMarks,
     remarks,
-  } = req.body; // Get data from request body
-  const { faculty_id } = req.params; // Get faculty ID from route params
+  } = req.body;
+  const { id: faculty_id, school_id } = req.user;
+  console.log("Faculty Id", faculty_id);
+  console.log("School Id", school_id);
 
   // Validate input
   if (
@@ -482,13 +509,14 @@ const addGrade = (req, res) => {
 
   // SQL query to insert the grade
   const query = `
-    INSERT INTO grades (student_id, classId, faculty_id, subject, obtainedMarks, totalMarks, grade, remarks)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO grades (school_id,student_id, classId, faculty_id, subject, obtainedMarks, totalMarks, grade, remarks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
     query,
     [
+      school_id,
       student_id,
       classId,
       faculty_id,
@@ -587,52 +615,62 @@ const viewAnnouncements = (req, res) => {
   });
 };
 
-const assignAssignmentToClass = async (req, res) => {
+const assignAssignmentToClass = (req, res) => {
+  const { school_id } = req.user; // Assuming school_id is extracted from the token
+
   const { class_name, subject, title, description, due_date } = req.body;
 
-  try {
-    // Validate if the class exists in `class_assignments`
-    const [classExists] = await db.query(
-      "SELECT * FROM class_assignments WHERE class_name = ? AND subject = ?",
-      [class_name, subject]
-    );
-
-    if (!classExists) {
-      return res
-        .status(400)
-        .json({ message: "Class or subject does not exist." });
-    }
-
-    // Insert the assignment for the class
-    await db.query(
-      "INSERT INTO class_assignments_tasks (class_name, subject, title, description, due_date) VALUES (?, ?, ?, ?, ?)",
-      [class_name, subject, title, description, due_date]
-    );
-
-    res
-      .status(201)
-      .json({ message: "Assignment successfully assigned to the class!" });
-  } catch (error) {
-    console.error("Error assigning assignment to class:", error);
-    res.status(500).json({ message: "Failed to assign assignment to class." });
+  if (!school_id) {
+    return res.status(400).json({ error: "School ID is required." });
   }
+
+  if (!class_name || !subject || !title || !description || !due_date) {
+    return res
+      .status(400)
+      .json({ error: "All fields are required to assign an assignment." });
+  }
+
+  const query = `
+    INSERT INTO class_assignments_tasks (school_id, class_name, subject, title, description, due_date)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    query,
+    [school_id, class_name, subject, title, description, due_date],
+    (err, result) => {
+      if (err) {
+        console.error("Error assigning assignment:", err);
+        return res.status(500).json({ error: "Failed to assign assignment." });
+      }
+
+      res.status(200).json({ message: "Assignment assigned successfully." });
+    }
+  );
 };
 
-const getClassDetails = async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT * FROM class_assignments");
+const getClassDetails = (req, res) => {
+  const { school_id } = req.user; // Assuming school_id is extracted from the token
 
-    if (!Array.isArray(rows)) {
-      return res.status(500).json({ message: "Failed to fetch class details" });
+  if (!school_id) {
+    return res.status(400).json({ error: "School ID is required." });
+  }
+
+  const query = `
+    SELECT class_name, subject 
+    FROM class_assignments 
+    WHERE school_id = ? 
+    GROUP BY class_name, subject
+  `;
+
+  db.query(query, [school_id], (err, results) => {
+    if (err) {
+      console.error("Error fetching class details:", err);
+      return res.status(500).json({ error: "Failed to fetch class details." });
     }
 
-    res.status(200).json({ success: true, data: rows });
-  } catch (error) {
-    console.error("Error fetching class details:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error fetching class details" });
-  }
+    res.status(200).json({ data: results });
+  });
 };
 
 module.exports = {

@@ -689,43 +689,43 @@ const createFeeStructure = (req, res) => {
 
 // function to update a fee structure
 const updateFeeStructure = (req, res) => {
-  const { school_id } = req.user;
   const { id } = req.params;
   const { class: class_name, amount, academic_year } = req.body;
-
+  console.log("ID", id);
   if (!id) {
     return res.status(400).json({ error: "Fee structure ID is required" });
   }
 
   // Logging the query and params
   const query =
-    "UPDATE fee_structures SET class = ?, amount = ?, academic_year = ? WHERE id = ? AND school_id = ?";
+    "UPDATE fee_structures SET class = ?, amount = ?, academic_year = ? WHERE id = ?";
 
-  db.query(
-    query,
-    [class_name, amount, academic_year, id, school_id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
+  db.query(query, [class_name, amount, academic_year, id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
 
-      // Log the result of the query execution to check the affected rows
-      console.log("Result:", result);
+    // Log the result of the query execution to check the affected rows
+    console.log("Result:", result);
 
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Fee structure not found" });
-      }
-
-      res.status(200).json({ message: "Fee structure updated successfully" });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Fee structure not found" });
     }
-  );
+
+    res.status(200).json({ message: "Fee structure updated successfully" });
+  });
 };
 
 // function to get all fee structures
 const getAllFeeStructures = (req, res) => {
-  db.query("SELECT * FROM fee_structures", (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+  const { school_id } = req.user;
+  db.query(
+    "SELECT * FROM fee_structures where school_id = ?",
+    [school_id],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
 
-    res.status(200).json({ feeStructures: results });
-  });
+      res.status(200).json({ feeStructures: results });
+    }
+  );
 };
 
 // function to get a specific fee structure
@@ -790,8 +790,11 @@ const createAnnouncement = (req, res) => {
 
 // Get all announcements
 const getAnnouncements = (req, res) => {
-  const query = "SELECT * FROM announcements ORDER BY created_at DESC";
-  db.query(query, (err, results) => {
+  const { school_id } = req.user;
+
+  const query =
+    "SELECT * FROM announcements where school_id = ? ORDER BY created_at DESC ";
+  db.query(query, [school_id], (err, results) => {
     if (err) {
       console.error("Error fetching announcements:", err);
       return res

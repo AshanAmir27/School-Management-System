@@ -2,15 +2,26 @@ import React, { useEffect, useState } from "react";
 
 function ViewStdLeaveReq() {
   const [request, setRequest] = useState([]);
+
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchLeaveRequest = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("You need to login first");
+        return;
+      }
+
       try {
         const response = await fetch(
           "http://localhost:5000/api/faculty/getLeaveRequest",
           {
             method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
         if (!response.ok) {
@@ -26,17 +37,21 @@ function ViewStdLeaveReq() {
     fetchLeaveRequest();
   }, []);
 
-  const handleStatusChange = async (id, status) => {
-    const student_id = 1;
+  const handleStatusChange = async (student_id, status) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Unauthorized Access");
+    }
     try {
       const response = await fetch(
-        `http://localhost:5000/api/faculty/${student_id}/updateLeaveStatus`,
+        `http://localhost:5000/api/faculty/updateLeaveStatus`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ id, status }),
+          body: JSON.stringify({ student_id, status }),
         }
       );
 
@@ -47,7 +62,7 @@ function ViewStdLeaveReq() {
       // Update the local state to reflect the status change
       setRequest((prevRequests) =>
         prevRequests.map((request) =>
-          request.id === id ? { ...request, status } : request
+          request.student_id === student_id ? { ...request, status } : request
         )
       );
     } catch (err) {
@@ -99,13 +114,17 @@ function ViewStdLeaveReq() {
                   <td className="px-6 py-3 text-sm text-gray-700 flex gap-3">
                     <button
                       className="bg-green-500 text-white py-1 px-4 rounded hover:bg-green-600 transition"
-                      onClick={() => handleStatusChange(req.id, "Approved")}
+                      onClick={() =>
+                        handleStatusChange(req.student_id, "Approved")
+                      }
                     >
                       Approve
                     </button>
                     <button
                       className="bg-red-500 text-white py-1 px-4 rounded hover:bg-red-600 transition"
-                      onClick={() => handleStatusChange(req.id, "Rejected")}
+                      onClick={() =>
+                        handleStatusChange(req.student_id, "Rejected")
+                      }
                     >
                       Reject
                     </button>

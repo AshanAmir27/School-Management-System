@@ -12,9 +12,19 @@ function ClassAssignment() {
 
   useEffect(() => {
     const fetchClassDetails = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setMessage("Please login to view class details.");
+        return;
+      }
       try {
         const response = await fetch(
-          "http://localhost:5000/api/faculty/get-class-details"
+          "http://localhost:5000/api/faculty/get-class-details",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         const data = await response.json();
 
@@ -41,6 +51,12 @@ function ClassAssignment() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("Please login to assign assignment.");
+      return;
+    }
+
     const payload = {
       class_name: className,
       subject,
@@ -54,7 +70,10 @@ function ClassAssignment() {
         "http://localhost:5000/api/faculty/assign-class-assignment",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(payload),
         }
       );
