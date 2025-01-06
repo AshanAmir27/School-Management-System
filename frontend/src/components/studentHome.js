@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Import components for different sections
-import Dashboard from "./stuDashboard"; // This could be your default component
-import Courses from "./stuCourses";
+import Grades from "./stuCourses";
 import Attendance from "./stuAttendance";
 import FeeStatus from "./StuFeeStatus";
 import StuAnnouncement from "./stuAnnouncement";
@@ -41,14 +40,6 @@ function StudentDashboard() {
           Student Dashboard
         </h2>
         <ul className="space-y-4">
-          <li>
-            <button
-              onClick={() => handleSidebarClick("dashboard")}
-              className="block py-2 px-4 text-gray-300 hover:bg-blue-700 hover:text-white rounded-md transition duration-300 ease-in-out"
-            >
-              Dashboard
-            </button>
-          </li>
           <li>
             <button
               onClick={() => handleSidebarClick("StuAssignments")}
@@ -134,8 +125,8 @@ function StudentDashboard() {
         {/* Dashboard Content */}
         <div className="p-6 flex-1 overflow-y-auto">
           {/* Render components conditionally based on activeComponent */}
-          {activeComponent === "dashboard" && <Dashboard />}
-          {activeComponent === "studentGrades" && <Courses />}
+
+          {activeComponent === "studentCourses" && <Grades />}
           {activeComponent === "attendance" && <Attendance />}
           {activeComponent === "feeStatus" && <FeeStatus />}
           {activeComponent === "stuLeaveRequest" && <StuLeaveRequest />}

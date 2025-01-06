@@ -56,16 +56,7 @@ const login = (req, res) => {
       res.status(200).json({
         message: "Login successful.",
         token: token,
-        student: {
-          student_id: student.id,
-          school_id: student.school_id,
-          full_name: student.full_name,
-          username: student.username,
-          email: student.email,
-          phone: student.phone,
-          address: student.address,
-          class: student.class,
-        },
+        student,
       });
     });
   });
@@ -143,26 +134,38 @@ const viewAttendance = (req, res) => {
 
 // Function to fetch grades for a specific student
 const viewGrades = (req, res) => {
-  console.log("Request User", req.user);
-  const { student_id } = req.user; // Extract student_id from the decoded token
-  console.log(student_id);
-  if (!req.user || !req.user.student_id) {
-    return res.status(400).json({ error: "Student ID not found in token" });
+  const { student_id, class: studentClass } = req.body;
+  console.log("StudentId,", student_id);
+  console.log("StudentClass,", studentClass);
+
+  if (!student_id || !studentClass) {
+    return res
+      .status(400)
+      .json({ error: "Student ID and class are required." });
   }
 
-  const query = "SELECT * FROM grades WHERE student_id = ?";
+  const query = `
+    SELECT 
+      subject, grade, obtainedMarks, totalMarks, 
+      ROUND((obtainedMarks / totalMarks) * 100, 2) AS percentage, 
+      faculty_name 
+    FROM grades 
+    WHERE student_id = ? AND class = ?
+  `;
 
-  db.query(query, [student_id], (err, results) => {
+  db.query(query, [student_id, studentClass], (err, results) => {
     if (err) {
-      console.error("Error fetching grade data:", err.message);
-      return res.status(500).json({ error: "Database query failed." });
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error occurred." });
     }
 
     if (results.length === 0) {
-      return res.status(404).json({ message: "No grade records found." });
+      return res
+        .status(404)
+        .json({ error: "No grades found for this student." });
     }
 
-    res.status(200).json({ grades: results });
+    res.status(200).json(results);
   });
 };
 

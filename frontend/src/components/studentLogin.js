@@ -6,10 +6,6 @@ function StudentLogin() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const [resetForm, setResetForm] = useState(false);
-  const [resetUsername, setResetUsername] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -27,8 +23,11 @@ function StudentLogin() {
 
       if (response.ok) {
         setMessage("Login Successful");
-        // console.log("Student information", data.message);
-        localStorage.setItem("authToken", data.token); // Store the token in local storage
+
+        // Store token and student information in session storage
+        sessionStorage.setItem("stuToken", data.token);
+
+        sessionStorage.setItem("studentData", JSON.stringify(data.student));
 
         navigate("/studentDashboard"); // Redirect to the student dashboard
       } else {
@@ -37,38 +36,6 @@ function StudentLogin() {
     } catch (error) {
       setMessage("An error occurred. Please try again.");
       console.log("Error Logging in:", error);
-    }
-  };
-
-  const handleForgotPassword = () => {
-    setResetForm(true);
-  };
-
-  const updatePassword = async (e) => {
-    e.preventDefault(); // Prevent form refresh
-    try {
-      const response = await fetch("http://localhost:5000/api/student/reset", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: resetUsername,
-          password: newPassword,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage("Password reset successfully. You can now log in.");
-        setResetForm(false); // Close reset form after success
-      } else {
-        setMessage(data.message || "Password reset failed.");
-      }
-    } catch (error) {
-      setMessage("Error occurred in resetting password.");
-      console.log("Error:", error);
     }
   };
 
@@ -113,7 +80,6 @@ function StudentLogin() {
             >
               Password
             </label>
-
             <input
               type="password"
               id="password"
@@ -130,70 +96,7 @@ function StudentLogin() {
             Login
           </button>
         </form>
-
-        <button
-          className="text-sm text-blue-400 mt-4"
-          onClick={handleForgotPassword}
-        >
-          Forgot Password?
-        </button>
       </div>
-
-      {resetForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-md shadow-md w-full max-w-sm">
-            <h2 className="text-xl font-bold text-gray-800 text-center mb-4">
-              Reset Password
-            </h2>
-            <form onSubmit={updatePassword} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="reset-username"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Username
-                </label>
-                <input
-                  type="text"
-                  id="reset-username"
-                  value={resetUsername}
-                  onChange={(e) => setResetUsername(e.target.value)}
-                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="new-password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  id="new-password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-              >
-                Reset Password
-              </button>
-            </form>
-            <button
-              onClick={() => setResetForm(false)}
-              className="mt-4 w-full text-sm text-red-500 hover:underline"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -5,10 +5,12 @@ function StuGrades() {
   const [grades, setGrades] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    const token = sessionStorage.getItem("stuToken");
+    const studentData = JSON.parse(sessionStorage.getItem("studentData"));
+    console.log(studentData);
+    if (!token || !studentData) {
       alert("Unauthorized access. Please log in.");
-      window.location.href = "/login"; // Redirect to login page
+      window.location.href = "/login";
       return;
     }
 
@@ -17,20 +19,28 @@ function StuGrades() {
         const response = await fetch(
           "http://localhost:5000/api/student/grades",
           {
+            method: "POST",
             headers: {
+              "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
+            body: JSON.stringify({
+              student_id: studentData.student_id,
+              class: studentData.class,
+            }),
           }
         );
-        if (!response.ok) {
-          throw new Error("Failed to fetch grades");
-        }
+
         const data = await response.json();
-        setGrades(data.grades || []);
-        setError("");
+
+        if (response.ok) {
+          setGrades(data);
+        } else {
+          setError(data.error || "Failed to fetch grades");
+        }
       } catch (err) {
-        console.error("Error fetching grades:", err.message);
-        setError(err.message || "An error occurred.");
+        setError("An error occurred while fetching grades.");
+        console.error("Error fetching grades:", err);
       }
     };
 
@@ -58,8 +68,8 @@ function StuGrades() {
             </tr>
           </thead>
           <tbody>
-            {grades.map((grade) => (
-              <tr key={grade.subject} className="border-b hover:bg-gray-50">
+            {grades.map((grade, index) => (
+              <tr key={index} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-2">{grade.subject}</td>
                 <td className="px-4 py-2">{grade.grade}</td>
                 <td className="px-4 py-2">{grade.obtainedMarks}</td>

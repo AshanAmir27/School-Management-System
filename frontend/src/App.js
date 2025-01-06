@@ -24,6 +24,7 @@ import FacultyDashboard from "./components/facultyDashboard";
 import FacultyAssignedClasses from "./components/facultyAssignedClasses";
 import Assignment from "./components/Assignment";
 import ViewAttendance from "./components/viewAttendance";
+import StudentGrades from "./components/stuCourses";
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
           <Route path="/viewAttendance" element={<ViewAttendance />} />
           <Route path="/stuFeeStatus" element={<StudentFeeStatus />} />
           <Route path="/stuLeaveRequest" element={<StudentLeaveRequest />} />
+          <Route path="/stuGrades" element={<StudentGrades />} />
         </Routes>
       </BrowserRouter>
     </>
